@@ -1,9 +1,9 @@
-import { withPrefix } from 'gatsby';
-import { encodeQueryParams } from 'use-query-params';
-import { stringify } from 'query-string';
-import { agGridVersion, localPrefix } from 'utils/consts';
-import { getIndexHtml } from './index-html-helper';
-import { ParameterConfig } from '../../pages/example-runner';
+import {withPrefix} from 'gatsby';
+import {encodeQueryParams} from 'use-query-params';
+import {stringify} from 'query-string';
+import {agGridVersion, localPrefix} from 'utils/consts';
+import {getIndexHtml} from './index-html-helper';
+import {ParameterConfig} from '../../pages/example-runner';
 import isDevelopment from 'utils/is-development';
 
 /**
@@ -33,7 +33,7 @@ const getInternalFramework = (framework, useFunctionalReact, useVue3, useTypescr
 };
 
 export const getExampleInfo = (
-    nodes,
+    exampleIndexData,
     library,
     pageName,
     name,
@@ -114,9 +114,9 @@ export const getExampleInfo = (
         sourcePath,
         boilerplatePath,
         appLocation,
-        getFile: name => nodes.filter(file => file.relativePath === sourcePath + name)[0],
+        getFile: name => exampleIndexData.filter(file => file.relativePath === sourcePath + name)[0],
         getFiles: (extension, exclude = () => false) =>
-            nodes.filter(file => file.relativePath.startsWith(sourcePath) &&
+            exampleIndexData.filter(file => file.relativePath.startsWith(sourcePath) &&
                 (!extension || file.base.endsWith(`.${extension}`)) &&
                 !exclude(file)
             )
@@ -124,9 +124,12 @@ export const getExampleInfo = (
 };
 
 const getFrameworkFiles = (framework, internalFramework) => {
-    if (framework === 'javascript' && internalFramework !== 'typescript') { return []; }
+    if (framework === 'javascript' && internalFramework !== 'typescript') {
+        return [];
+    }
 
-    let files = ['systemjs.config.js'];
+    // spl temporary css loader
+    let files = ['systemjs.config.js', 'css.js'];
 
     if (isDevelopment()) {
         files.push('systemjs.config.dev.js');
@@ -140,7 +143,7 @@ const getFrameworkFiles = (framework, internalFramework) => {
 };
 
 export const getExampleFiles = (exampleInfo, includePackageFile = false) => {
-    const { sourcePath, framework, internalFramework, boilerplatePath } = exampleInfo;
+    const {sourcePath, framework, internalFramework, boilerplatePath} = exampleInfo;
 
     const filesForExample = exampleInfo
         .getFiles()
@@ -176,7 +179,7 @@ export const getExampleFiles = (exampleInfo, includePackageFile = false) => {
         const sourcePromise = (f.content ?? fetch(f.publicURL).then(response => response.text()));
         const promise = sourcePromise
             .then(source => {
-                files[f.path] = { source, isFramework: f.isFramework }
+                files[f.path] = {source, isFramework: f.isFramework}
             });
 
         promises.push(promise);
@@ -191,7 +194,7 @@ export const getExampleFiles = (exampleInfo, includePackageFile = false) => {
 };
 
 export const openPlunker = exampleInfo => {
-    const { title, framework, internalFramework } = exampleInfo;
+    const {title, framework, internalFramework} = exampleInfo;
 
     getExampleFiles(exampleInfo, true).then(files => {
 
@@ -228,21 +231,24 @@ export const openPlunker = exampleInfo => {
     });
 };
 
+
 export const isUsingPublishedPackages = () => process.env.GATSBY_USE_PUBLISHED_PACKAGES === 'true';
 
-export const getCssFilePaths = theme => {
+export const getCssFilePaths = (importType, theme) => {
     const themeFiles = theme ?
         [theme] :
-        ['alpine-dark', 'alpine', 'balham-dark', 'balham', 'material', 'fresh', 'dark', 'blue', 'bootstrap'];
+        ['alpine', 'balham', 'material'];
 
     const cssFiles = [
         'ag-grid.css',
         ...themeFiles.map(theme => `ag-theme-${theme}.css`)
     ];
 
+    const agCommunityPackage = importType === 'packages' ? 'ag-grid-community' : '@ag-grid-community';
+
     const getCssFilePath = file => isUsingPublishedPackages() ?
-        `https://unpkg.com/@ag-grid-community/core@${agGridVersion}/dist/styles/${file}` :
-        `${localPrefix}/@ag-grid-community/core/dist/styles/${file}`;
+        `https://unpkg.com/@ag-grid-community/styles@${agGridVersion}/styles/${file}` :
+        `${localPrefix}/${agCommunityPackage}/styles/${file}`;
 
     return cssFiles.map(getCssFilePath);
 };

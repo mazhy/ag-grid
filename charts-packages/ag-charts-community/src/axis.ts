@@ -6,14 +6,15 @@ import { Text, FontStyle, FontWeight } from "./scene/shape/text";
 import { Arc } from "./scene/shape/arc";
 import { Shape } from "./scene/shape/shape";
 import { BBox } from "./scene/bbox";
-import { Matrix } from "./scene/matrix";
 import { Caption } from "./caption";
 import { createId } from "./util/id";
 import { normalizeAngle360, normalizeAngle360Inclusive, toRadians } from "./util/angle";
 import { doOnce } from "./util/function";
 import { ContinuousScale } from "./scale/continuousScale";
 import { CountableTimeInterval } from "./util/time/interval";
-// import { Rect } from "./scene/shape/rect"; // debug (bbox)
+import { CrossLine } from "./chart/crossline/crossLine";
+import { Validate, BOOLEAN, OPT_BOOLEAN, NUMBER, OPT_NUMBER, OPT_FONT_STYLE, OPT_FONT_WEIGHT, STRING, OPT_STRING } from './util/validation';
+import { ChartAxisDirection } from "./chart/chartAxis";
 
 enum Tags {
     Tick,
@@ -30,17 +31,20 @@ export class AxisTick {
     /**
      * The line width to be used by axis ticks.
      */
+    @Validate(NUMBER(0))
     width: number = 1;
 
     /**
      * The line length to be used by axis ticks.
      */
+    @Validate(NUMBER(0))
     size: number = 6;
 
     /**
      * The color of the axis ticks.
      * Use `undefined` rather than `rgba(0, 0, 0, 0)` to make the ticks invisible.
      */
+    @Validate(OPT_STRING)
     color?: string = 'rgba(195, 195, 195, 1)';
 
     /**
@@ -65,23 +69,29 @@ export interface AxisLabelFormatterParams {
 
 export class AxisLabel {
 
+    @Validate(OPT_FONT_STYLE)
     fontStyle?: FontStyle = undefined;
 
+    @Validate(OPT_FONT_WEIGHT)
     fontWeight?: FontWeight = undefined;
 
+    @Validate(NUMBER(1))
     fontSize: number = 12;
 
+    @Validate(STRING)
     fontFamily: string = 'Verdana, sans-serif';
 
     /**
      * The padding between the labels and the ticks.
      */
+    @Validate(NUMBER(0))
     padding: number = 5;
 
     /**
      * The color of the labels.
      * Use `undefined` rather than `rgba(0, 0, 0, 0)` to make labels invisible.
      */
+    @Validate(STRING)
     color?: string = 'rgba(87, 87, 87, 1)';
 
     /**
@@ -91,17 +101,21 @@ export class AxisLabel {
      * The value of this config is used as the angular offset/deflection
      * from the default rotation.
      */
+    @Validate(OPT_NUMBER(-360, 360))
     rotation?: number = undefined;
+
 
     /**
      * If specified and axis labels may collide, they are rotated to reduce collisions. If the
      * `rotation` property is specified, it takes precedence.
      */
+    @Validate(OPT_BOOLEAN)
     autoRotate: boolean | undefined = undefined;
 
     /**
      * Rotation angle to use when autoRotate is applied.
      */
+    @Validate(NUMBER(-360, 360))
     autoRotateAngle: number = 335;
 
     /**
@@ -117,6 +131,7 @@ export class AxisLabel {
      * from north-west to south-east, _starting_ at the tick to the right
      * of the axis line.
      */
+    @Validate(BOOLEAN)
     mirrored: boolean = false;
 
     /**
@@ -124,6 +139,7 @@ export class AxisLabel {
      * Setting this config to `true` makes labels render parallel to the axis line
      * and center aligns labels' text at the ticks.
      */
+    @Validate(BOOLEAN)
     parallel: boolean = false;
 
     /**
@@ -136,6 +152,7 @@ export class AxisLabel {
 
     onFormatChange?: (format?: string) => void = undefined;
 
+    @Validate(STRING)
     private _format: string | undefined;
     set format(value: string | undefined) {
         // See `TimeLocaleObject` docs for the list of supported format directives.
@@ -162,26 +179,16 @@ export class AxisLabel {
  */
 export class Axis<S extends Scale<D, number>, D = any> {
 
-    // debug (bbox)
-    // private bboxRect = (() => {
-    //     const rect = new Rect();
-    //     rect.fill = undefined;
-    //     rect.stroke = 'red';
-    //     rect.strokeWidth = 1;
-    //     rect.strokeOpacity = 0.2;
-    //     return rect;
-    // })();
-
     readonly id = createId(this);
-
-    private groupSelection: Selection<Group, Group, D, D>;
-    private lineNode = new Line();
 
     protected _scale!: S;
     set scale(value: S) {
         this._scale = value;
         this.requestedRange = value.range.slice();
         this.onLabelFormatChange();
+        this.crossLines?.forEach((crossLine) => {
+            this.initCrossLine(crossLine);
+        });
     }
     get scale(): S {
         return this._scale;
@@ -189,7 +196,31 @@ export class Axis<S extends Scale<D, number>, D = any> {
 
     ticks: any[];
 
-    readonly group = new Group();
+    readonly axisGroup = new Group({ name: `${this.id}-axis`, layer: true, zIndex: 50 });
+    readonly crossLineGroup: Group = new Group({ name: `${this.id}-CrossLines` });
+
+    private readonly tickLineGroup = this.axisGroup.appendChild(new Group());
+    private readonly titleGroup = this.axisGroup.appendChild(new Group());
+    private tickLineGroupSelection = Selection.select(this.tickLineGroup).selectAll<Group>();
+    private lineNode = this.tickLineGroup.appendChild(new Line());
+
+    readonly gridlineGroup = new Group({ name: `${this.id}-gridline`, layer: true, zIndex: 0 });
+    private gridlineGroupSelection = Selection.select(this.gridlineGroup).selectAll<Group>();
+
+    private _crossLines?: CrossLine[] = [];
+    set crossLines(value: CrossLine[] | undefined) {
+        this._crossLines?.forEach(crossLine => this.detachCrossLine(crossLine));
+
+        this._crossLines = value;
+
+        this._crossLines?.forEach(crossLine => {
+            this.attachCrossLine(crossLine);
+            this.initCrossLine(crossLine);
+        });
+    }
+    get crossLines(): CrossLine[] | undefined {
+        return this._crossLines;
+    }
 
     readonly line: {
         /**
@@ -226,24 +257,34 @@ export class Axis<S extends Scale<D, number>, D = any> {
         return this._calculatedTickCount ?? this.tick.count;
     }
 
+    private attachCrossLine(crossLine: CrossLine) {
+        this.crossLineGroup.appendChild(crossLine.group);
+    }
+
+    private detachCrossLine(crossLine: CrossLine) {
+        this.crossLineGroup.removeChild(crossLine.group);
+    }
+
     /**
      * Overridden in ChartAxis subclass.
      * Sets an appropriate tick count based on the available range.
      */
-    calculateTickCount(availableRange: number): void { }
+    calculateTickCount(_availableRange: number): void {
+        // Override point for subclasses.
+    }
 
     /**
      * Meant to be overridden in subclasses to provide extra context the the label formatter.
      * The return value of this function will be passed to the laber.formatter as the `axis` parameter.
      */
-    getMeta(): any { }
+    getMeta(): any {
+        // Override point for subclasses.
+    }
 
     constructor(scale: S) {
         this.scale = scale;
-        this.groupSelection = Selection.select(this.group).selectAll<Group>();
+
         this.label.onFormatChange = this.onLabelFormatChange.bind(this);
-        this.group.append(this.lineNode);
-        // this.group.append(this.bboxRect); // debug (bbox)
     }
 
     protected updateRange() {
@@ -285,7 +326,7 @@ export class Axis<S extends Scale<D, number>, D = any> {
         this.updateRange();
     }
     get range(): number[] {
-        return this.requestedRange.slice();
+        return this.requestedRange;
     }
 
     protected _visibleRange: number[] = [0, 1];
@@ -331,12 +372,12 @@ export class Axis<S extends Scale<D, number>, D = any> {
         const oldTitle = this._title;
         if (oldTitle !== value) {
             if (oldTitle) {
-                this.group.removeChild(oldTitle.node);
+                this.titleGroup.removeChild(oldTitle.node);
             }
 
             if (value) {
                 value.node.rotation = -Math.PI / 2;
-                this.group.appendChild(value.node);
+                this.titleGroup.appendChild(value.node);
             }
 
             this._title = value;
@@ -358,10 +399,14 @@ export class Axis<S extends Scale<D, number>, D = any> {
     set gridLength(value: number) {
         // Was visible and now invisible, or was invisible and now visible.
         if (this._gridLength && !value || !this._gridLength && value) {
-            this.groupSelection = this.groupSelection.remove().setData([]);
+            this.gridlineGroupSelection = this.gridlineGroupSelection.remove().setData([]);
         }
 
         this._gridLength = value;
+
+        this.crossLines?.forEach((crossLine) => {
+            this.initCrossLine(crossLine);
+        });
     }
     get gridLength(): number {
         return this._gridLength;
@@ -387,7 +432,7 @@ export class Axis<S extends Scale<D, number>, D = any> {
     set radialGrid(value: boolean) {
         if (this._radialGrid !== value) {
             this._radialGrid = value;
-            this.groupSelection = this.groupSelection.remove().setData([]);
+            this.gridlineGroupSelection = this.gridlineGroupSelection.remove().setData([]);
         }
     }
     get radialGrid(): boolean {
@@ -410,7 +455,7 @@ export class Axis<S extends Scale<D, number>, D = any> {
      * it will also make it harder to reason about the program.
      */
     update() {
-        const { group, scale, tick, label, gridStyle, requestedRange } = this;
+        const { axisGroup, gridlineGroup, crossLineGroup, scale, gridLength, tick, label, gridStyle, requestedRange, translation } = this;
         const requestedRangeMin = Math.min(requestedRange[0], requestedRange[1]);
         const requestedRangeMax = Math.max(requestedRange[0], requestedRange[1]);
         const rotation = toRadians(this.rotation);
@@ -418,9 +463,20 @@ export class Axis<S extends Scale<D, number>, D = any> {
         const parallelLabels = label.parallel;
         let labelAutoRotation = 0;
 
-        group.translationX = this.translation.x;
-        group.translationY = this.translation.y;
-        group.rotation = rotation;
+        const translationX = Math.floor(translation.x);
+        const translationY = Math.floor(translation.y);
+
+        crossLineGroup.translationX = translationX;
+        crossLineGroup.translationY = translationY;
+        crossLineGroup.rotation = rotation;
+
+        axisGroup.translationX = translationX;
+        axisGroup.translationY = translationY;
+        axisGroup.rotation = rotation;
+
+        gridlineGroup.translationX = translationX;
+        gridlineGroup.translationY = translationY;
+        gridlineGroup.rotation = rotation;
 
         const halfBandwidth = (scale.bandwidth || 0) / 2;
 
@@ -445,40 +501,52 @@ export class Axis<S extends Scale<D, number>, D = any> {
         const regularFlipFlag = !labelRotation && regularFlipRotation >= 0 && regularFlipRotation <= Math.PI ? -1 : 1;
 
         const ticks = this.ticks || scale.ticks!(this.calculatedTickCount);
-        const update = this.groupSelection.setData(ticks);
-        update.exit.remove();
+        const updateAxis = this.tickLineGroupSelection.setData(ticks);
+        updateAxis.exit.remove();
 
-        const enter = update.enter.append(Group);
+        const enterAxis = updateAxis.enter.append(Group);
         // Line auto-snaps to pixel grid if vertical or horizontal.
-        enter.append(Line).each(node => node.tag = Tags.Tick);
+        enterAxis.append(Line).each(node => node.tag = Tags.Tick);
+        enterAxis.append(Text);
 
-        if (this.gridLength) {
+        const tickLineGroupSelection = updateAxis.merge(enterAxis);
+
+        const updateGridlines = this.gridlineGroupSelection.setData(gridLength ? ticks : []);
+        updateGridlines.exit.remove();
+        let gridlineGroupSelection = updateGridlines;
+        if (gridLength) {
+            const tagFn = (node: Line | Arc) => node.tag = Tags.GridLine;
+            const enterGridline = updateGridlines.enter.append(Group);
             if (this.radialGrid) {
-                enter.append(Arc).each(node => node.tag = Tags.GridLine);
+                enterGridline.append(Arc).each(tagFn);
             } else {
-                enter.append(Line).each(node => node.tag = Tags.GridLine);
+                enterGridline.append(Line).each(tagFn);
             }
+            gridlineGroupSelection = updateGridlines.merge(enterGridline);
         }
-        enter.append(Text);
-
-        const groupSelection = update.merge(enter);
 
         let anyVisible = false;
-        groupSelection
-            .attrFn('translationY', function (_, datum) {
-                return Math.round(scale.convert(datum) + halfBandwidth);
-            })
-            .attrFn('visible', function (node) {
-                const min = Math.floor(requestedRangeMin);
-                const max = Math.ceil(requestedRangeMax);
-                const visible = (min !== max) && node.translationY >= min && node.translationY <= max;
-                anyVisible = visible || anyVisible;
-                return visible;
-            });
+        const translationYFn = (_: unknown, datum: any) => Math.round(scale.convert(datum) + halfBandwidth);
+        const visibleFn = (node: Group) => {
+            const min = Math.floor(requestedRangeMin);
+            const max = Math.ceil(requestedRangeMax);
+            const visible = (min !== max) && node.translationY >= min && node.translationY <= max;
+            anyVisible = visible || anyVisible;
+            return visible;
+        };
 
-        this.group.visible = anyVisible;
+        tickLineGroupSelection
+            .attrFn('translationY', translationYFn)
+            .attrFn('visible', visibleFn);
+        gridlineGroupSelection
+            .attrFn('translationY', translationYFn)
+            .attrFn('visible', visibleFn);
+
+        this.axisGroup.visible = anyVisible;
+        this.gridlineGroup.visible = anyVisible;
         if (!anyVisible) {
-            this.groupSelection = groupSelection;
+            this.tickLineGroupSelection = tickLineGroupSelection;
+            this.gridlineGroupSelection = gridlineGroupSelection;
             return;
         }
 
@@ -486,13 +554,13 @@ export class Axis<S extends Scale<D, number>, D = any> {
         this.fractionDigits = (ticks as any).fractionDigits >= 0 ? (ticks as any).fractionDigits : 0;
 
         // Update properties that affect the size of the axis labels and measure the labels
-        const labelBboxes: Map<number, BBox> = new Map();
+        const labelBboxes: Map<number, BBox | null> = new Map();
         let labelCount = 0;
 
         let halfFirstLabelLength = false;
         let halfLastLabelLength = false;
         const availableRange = requestedRangeMax - requestedRangeMin;
-        const labelSelection = groupSelection.selectByClass(Text)
+        const labelSelection = tickLineGroupSelection.selectByClass(Text)
             .each((node, datum, index) => {
                 node.fontStyle = label.fontStyle;
                 node.fontWeight = label.fontWeight;
@@ -504,9 +572,10 @@ export class Axis<S extends Scale<D, number>, D = any> {
                 node.visible = node.parent!.visible;
                 if (node.visible !== true) { return; }
 
-                labelBboxes.set(index, node.computeBBox());
+                const userHidden = node.text === '' || node.text == undefined;
+                labelBboxes.set(index, userHidden ? null : node.computeBBox());
 
-                if (node.text === '' || node.text == undefined) { return; }
+                if (userHidden) { return; }
                 labelCount++;
 
                 if (index === 0 && (node.translationY === scale.range[0])) {
@@ -520,12 +589,14 @@ export class Axis<S extends Scale<D, number>, D = any> {
 
         const step = availableRange / labelCount;
 
-        const calculateLabelsLength = (bboxes: Map<number, BBox>, useWidth: boolean) => {
+        const calculateLabelsLength = (bboxes: Map<number, BBox | null>, useWidth: boolean) => {
             let totalLength = 0;
             let rotate = false;
             const lastIdx = bboxes.size - 1;
             const padding = 12;
             for (let [i, bbox] of bboxes.entries()) {
+                if (bbox == null) { continue; }
+
                 const divideBy = (i === 0 && halfFirstLabelLength) || (i === lastIdx && halfLastLabelLength) ? 2 : 1;
                 const length = useWidth ? bbox.width / divideBy : bbox.height / divideBy;
                 const lengthWithPadding = length <= 0 ? 0 : length + padding;
@@ -609,7 +680,7 @@ export class Axis<S extends Scale<D, number>, D = any> {
             });
         }
 
-        groupSelection.selectByTag<Line>(Tags.Tick)
+        tickLineGroupSelection.selectByTag<Line>(Tags.Tick)
             .each((line, _, index) => {
                 line.strokeWidth = tick.width;
                 line.stroke = tick.color;
@@ -620,14 +691,14 @@ export class Axis<S extends Scale<D, number>, D = any> {
             .attr('y1', 0)
             .attr('y2', 0);
 
-        if (this.gridLength && gridStyle.length) {
+        if (gridLength && gridStyle.length) {
             const styleCount = gridStyle.length;
             let gridLines: Selection<Shape, Group, D, D>;
 
             if (this.radialGrid) {
-                const angularGridLength = normalizeAngle360Inclusive(toRadians(this.gridLength));
+                const angularGridLength = normalizeAngle360Inclusive(toRadians(gridLength));
 
-                gridLines = groupSelection.selectByTag<Arc>(Tags.GridLine)
+                gridLines = gridlineGroupSelection.selectByTag<Arc>(Tags.GridLine)
                     .each((arc, datum, index) => {
                         const radius = Math.round(scale.convert(datum) + halfBandwidth);
 
@@ -639,10 +710,10 @@ export class Axis<S extends Scale<D, number>, D = any> {
                         arc.visible = labelBboxes.has(index);
                     });
             } else {
-                gridLines = groupSelection.selectByTag<Line>(Tags.GridLine)
+                gridLines = gridlineGroupSelection.selectByTag<Line>(Tags.GridLine)
                     .each((line, _, index) => {
                         line.x1 = 0;
-                        line.x2 = -sideFlag * this.gridLength;
+                        line.x2 = -sideFlag * gridLength;
                         line.y1 = 0;
                         line.y2 = 0;
                         line.visible = Math.abs(line.parent!.translationY - scale.range[0]) > 1 && labelBboxes.has(index);
@@ -659,7 +730,8 @@ export class Axis<S extends Scale<D, number>, D = any> {
             });
         }
 
-        this.groupSelection = groupSelection;
+        this.tickLineGroupSelection = tickLineGroupSelection;
+        this.gridlineGroupSelection = gridlineGroupSelection;
 
         // Render axis line.
         const lineNode = this.lineNode;
@@ -673,13 +745,14 @@ export class Axis<S extends Scale<D, number>, D = any> {
 
         this.positionTitle();
 
-        // debug (bbox)
-        // const bbox = this.computeBBox();
-        // const bboxRect = this.bboxRect;
-        // bboxRect.x = bbox.x;
-        // bboxRect.y = bbox.y;
-        // bboxRect.width = bbox.width;
-        // bboxRect.height = bbox.height;
+        this.crossLines?.forEach((crossLine) => {
+            crossLine.sideFlag = -sideFlag as (-1 | 1);
+            crossLine.direction = rotation === -Math.PI / 2 ? ChartAxisDirection.X : ChartAxisDirection.Y;
+            crossLine.label.parallel = crossLine.label.parallel !== undefined ? crossLine.label.parallel : parallelLabels;
+            crossLine.parallelFlipRotation = parallelFlipRotation;
+            crossLine.regularFlipRotation = regularFlipRotation;
+            crossLine.update(anyVisible); // fix visible
+        });
     }
 
     private positionTitle(): void {
@@ -698,19 +771,19 @@ export class Axis<S extends Scale<D, number>, D = any> {
 
             const sideFlag = label.mirrored ? 1 : -1;
             const parallelFlipRotation = normalizeAngle360(rotation);
-            const padding = title.padding.bottom;
+            const padding = Caption.PADDING;
             const titleNode = title.node;
-            const bbox = this.computeBBox({ excludeTitle: true });
             const titleRotationFlag = sideFlag === -1 && parallelFlipRotation > Math.PI && parallelFlipRotation < Math.PI * 2 ? -1 : 1;
 
             titleNode.rotation = titleRotationFlag * sideFlag * Math.PI / 2;
-            // titleNode.x = titleRotationFlag * sideFlag * (lineNode.y1 + lineNode.y2) / 2; // TODO: remove?
-            titleNode.x = titleRotationFlag * sideFlag * (requestedRange[0] + requestedRange[1]) / 2;
+            titleNode.x = Math.floor(titleRotationFlag * sideFlag * (requestedRange[0] + requestedRange[1]) / 2);
 
+            const bbox = this.tickLineGroup.computeBBox();
+            const bboxYDimension = rotation === 0 ? bbox.width : bbox.height;
             if (sideFlag === -1) {
-                titleNode.y = titleRotationFlag * (-padding - bbox.width + Math.max(bbox.x + bbox.width, 0));
+                titleNode.y = Math.floor(titleRotationFlag * (-padding - bboxYDimension));
             } else {
-                titleNode.y = -padding - bbox.width - Math.min(bbox.x, 0);
+                titleNode.y = Math.floor(-padding - bboxYDimension);
             }
             titleNode.textBaseline = titleRotationFlag === 1 ? 'bottom' : 'top';
         }
@@ -747,68 +820,12 @@ export class Axis<S extends Scale<D, number>, D = any> {
 
     thickness: number = 0;
 
-    computeBBox(options?: { excludeTitle: boolean }): BBox {
-        const { title, lineNode } = this;
-        const labels = this.groupSelection.selectByClass(Text);
+    computeBBox(): BBox {
+        return this.axisGroup.computeBBox();
+    }
 
-        let left = Infinity;
-        let right = -Infinity;
-        let top = Infinity;
-        let bottom = -Infinity;
-
-        labels.each(label => {
-            // The label itself is rotated, but not translated, the group that
-            // contains it is. So to capture the group transform in the label bbox
-            // calculation we combine the transform matrices of the label and the group.
-            // Depending on the timing of the `axis.computeBBox()` method call, we may
-            // not have the group's and the label's transform matrices updated yet (because
-            // the transform matrix is not recalculated whenever a node's transform attributes
-            // change, instead it's marked for recalculation on the next frame by setting
-            // the node's `dirtyTransform` flag to `true`), so we force them to update
-            // right here by calling `computeTransformMatrix`.
-            label.computeTransformMatrix();
-            const matrix = Matrix.flyweight(label.matrix);
-            const group = label.parent!;
-            group.computeTransformMatrix();
-            matrix.preMultiplySelf(group.matrix);
-            const labelBBox = label.computeBBox();
-
-            if (labelBBox) {
-                const bbox = matrix.transformBBox(labelBBox);
-
-                left = Math.min(left, bbox.x);
-                right = Math.max(right, bbox.x + bbox.width);
-                top = Math.min(top, bbox.y);
-                bottom = Math.max(bottom, bbox.y + bbox.height);
-            }
-        });
-
-        if (title && title.enabled && lineNode.visible && (!options || !options.excludeTitle)) {
-            const label = title.node;
-            label.computeTransformMatrix();
-            const matrix = Matrix.flyweight(label.matrix);
-            const labelBBox = label.computeBBox();
-
-            if (labelBBox) {
-                const bbox = matrix.transformBBox(labelBBox);
-
-                left = Math.min(left, bbox.x);
-                right = Math.max(right, bbox.x + bbox.width);
-                top = Math.min(top, bbox.y);
-                bottom = Math.max(bottom, bbox.y + bbox.height);
-            }
-        }
-
-        left = Math.min(left, 0);
-        right = Math.max(right, 0);
-        top = Math.min(top, lineNode.y1, lineNode.y2);
-        bottom = Math.max(bottom, lineNode.y1, lineNode.y2);
-
-        return new BBox(
-            left,
-            top,
-            right - left,
-            bottom - top
-        );
+    initCrossLine(crossLine: CrossLine) {
+        crossLine.scale = this.scale;
+        crossLine.gridLength = this.gridLength;
     }
 }

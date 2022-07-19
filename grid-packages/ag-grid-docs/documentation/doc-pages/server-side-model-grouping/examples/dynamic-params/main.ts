@@ -1,6 +1,6 @@
-import { Grid, GetServerSideStoreParamsParams, GridOptions, IServerSideDatasource, ServerSideStoreParams } from '@ag-grid-community/core'
+import { Grid, GetServerSideGroupLevelParamsParams, GridOptions, IServerSideDatasource, ServerSideGroupLevelParams } from '@ag-grid-community/core'
 declare var FakeServer: any;
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   columnDefs: [
     { field: 'country', enableRowGroup: true, rowGroup: true },
     { field: 'sport', enableRowGroup: true, rowGroup: true },
@@ -21,20 +21,18 @@ const gridOptions: GridOptions = {
     minWidth: 280,
   },
 
-  // rowBuffer: 0,
   cacheBlockSize: 4,
 
   // use the server-side row model
   rowModelType: 'serverSide',
-  serverSideStoreType: 'partial',
 
-  getServerSideStoreParams: (params: GetServerSideStoreParamsParams): ServerSideStoreParams => {
+  getServerSideGroupLevelParams: (params: GetServerSideGroupLevelParamsParams): ServerSideGroupLevelParams => {
     var noGroupingActive = params.rowGroupColumns.length == 0
-    var res: ServerSideStoreParams;
+    var res: ServerSideGroupLevelParams;
     if (noGroupingActive) {
       res = {
         // infinite scrolling
-        storeType: 'partial',
+        infiniteScroll: true,
         // 100 rows per block
         cacheBlockSize: 100,
         // purge blocks that are not needed
@@ -43,15 +41,15 @@ const gridOptions: GridOptions = {
     } else {
       var topLevelRows = params.level == 0
       res = {
-        storeType: topLevelRows ? 'full' : 'partial',
+        infiniteScroll: topLevelRows ? false : true,
         cacheBlockSize: params.level == 1 ? 5 : 2,
         maxBlocksInCache: -1, // never purge blocks
       }
     }
 
-    console.log('############## NEW STORE ##############')
+    console.log('############## NEW GROUP LEVEL ##############')
     console.log(
-      'getServerSideStoreParams, level = ' +
+      'getServerSideGroupLevelParams, level = ' +
       params.level +
       ', result = ' +
       JSON.stringify(res)

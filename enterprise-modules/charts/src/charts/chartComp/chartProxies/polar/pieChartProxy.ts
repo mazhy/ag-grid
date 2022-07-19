@@ -1,9 +1,19 @@
-import { AgChart, LegendClickEvent, PieSeries, PolarChart } from "ag-charts-community";
-import { ChartProxyParams, FieldDefinition, UpdateChartParams } from "../chartProxy";
-import { PolarChartProxy } from "./polarChartProxy";
+import { ChartProxy, ChartProxyParams, FieldDefinition, UpdateChartParams } from "../chartProxy";
+import { AgChart, PieTooltipRendererParams, PolarChart, AgChartLegendClickEvent } from "ag-charts-community";
+import {
+    AgPieSeriesOptions,
+    AgPolarChartOptions,
+    AgPolarSeriesOptions
+} from "ag-charts-community/src/chart/agChartOptions";
 import { changeOpacity } from "../../utils/color";
+import { deepMerge } from "../../utils/object";
 
-export class PieChartProxy extends PolarChartProxy {
+interface DoughnutOffset {
+    offsetAmount: number;
+    currentOffset: number;
+}
+
+export class PieChartProxy extends ChartProxy {
 
     public constructor(params: ChartProxyParams) {
         super(params);
@@ -19,113 +29,180 @@ export class PieChartProxy extends PolarChartProxy {
     }
 
     public update(params: UpdateChartParams): void {
-        const {chart} = this;
+        const { data, category } = params;
 
-        if (params.fields.length === 0) {
-            chart.removeAllSeries();
-            return;
+        let options: AgPolarChartOptions = {
+            ...this.getCommonChartOptions(),
+            data: this.crossFiltering ? this.getCrossFilterData(params) : this.transformData(data, category.id),
+            series: this.getSeries(params)
         }
 
-        const field = params.fields[0];
-        const angleField = field;
-
         if (this.crossFiltering) {
-            // add additional filtered out field
-            let fields = params.fields;
-            fields.forEach(field => {
-                const crossFilteringField = {...field};
-                crossFilteringField.colId = field.colId + '-filtered-out';
-                fields.push(crossFilteringField);
-            });
+            options = this.getCrossFilterChartOptions(options);
+        }
 
-            const filteredOutField = fields[1];
+        AgChart.update(this.chart as PolarChart, options);
+    }
 
-            params.data.forEach(d => {
-                d[field.colId + '-total'] = d[field.colId] + d[filteredOutField.colId];
-                d[field.colId] = d[field.colId] / d[field.colId + '-total'];
-                d[filteredOutField.colId] = 1;
-            });
+    private getSeries(params: UpdateChartParams): AgPolarSeriesOptions[] {
+        const numFields = params.fields.length;
 
-            let opaqueSeries = chart.series[1] as PieSeries;
-            let radiusField = filteredOutField;
-            opaqueSeries = this.updateSeries(chart, opaqueSeries, angleField, radiusField, params, undefined);
+        const offset = {
+            currentOffset: 0,
+            offsetAmount: numFields > 1 ? 20 : 40
+        };
 
-            radiusField = angleField;
-            const filteredSeries = chart.series[0] as PieSeries;
-            this.updateSeries(chart, filteredSeries, angleField, radiusField, params, opaqueSeries);
+        const series = this.getFields(params).map((f: FieldDefinition) => {
+            const seriesDefaults = this.extractSeriesOverrides();
 
-        } else {
-            const series = chart.series[0] as PieSeries;
-            this.updateSeries(chart, series, angleField, angleField, params, undefined);
+            // options shared by 'pie' and 'doughnut' charts
+            const options = {
+                ...seriesDefaults,
+                type: this.standaloneChartType,
+                angleKey: f.colId,
+                angleName: f.displayName!,
+                labelKey: params.category.id,
+                labelName: params.category.name,
+            }
+
+            if (this.chartType === 'doughnut') {
+                const { outerRadiusOffset, innerRadiusOffset } = PieChartProxy.calculateOffsets(offset);
+
+                // augment shared options with 'doughnut' specific options
+                return {
+                    ...options,
+                    outerRadiusOffset,
+                    innerRadiusOffset,
+                    title: {
+                        ...seriesDefaults.title,
+                        text: seriesDefaults.title.text || f.displayName,
+                        showInLegend: numFields > 1,
+                    },
+                    callout: {
+                        ...seriesDefaults.callout,
+                        colors: this.chartTheme.palette.strokes,
+                    }
+                }
+            }
+
+            return options;
+        });
+
+        return this.crossFiltering ? this.extractCrossFilterSeries(series) : series;
+    }
+
+    private getCrossFilterChartOptions(options: AgPolarChartOptions) {
+        const seriesOverrides = this.extractSeriesOverrides();
+        return {
+            ...options,
+            tooltip: {
+                ...seriesOverrides.tooltip,
+                delay: 500,
+            },
+            legend: {
+                ...seriesOverrides.legend,
+                listeners: {
+                    legendItemClick: (e: AgChartLegendClickEvent) => {
+                        this.chart.series.forEach(s => s.toggleSeriesItem(e.itemId, e.enabled));
+                    }
+                }
+            }
         }
     }
 
-    private updateSeries(
-        chart: PolarChart,
-        series: PieSeries,
-        angleField: FieldDefinition,
-        field: FieldDefinition,
-        params: UpdateChartParams,
-        opaqueSeries: PieSeries | undefined
-    ) {
-        const existingSeriesId = series && series.angleKey;
+    private getCrossFilterData(params: UpdateChartParams) {
+        const colId = params.fields[0].colId;
+        const filteredOutColId = `${colId}-filtered-out`;
 
-        const seriesOverrides = this.chartOptions[this.standaloneChartType].series;
-        let pieSeries = series;
-        if (existingSeriesId !== field.colId) {
-            chart.removeSeries(series);
+        return params.data.map(d => {
+            const total = d[colId] + d[filteredOutColId];
+            d[`${colId}-total`] = total;
+            d[filteredOutColId] = 1; // normalise to 1
+            d[colId] = d[colId] / total; // fraction of 1
+            return d;
+        });
+    }
 
-            const options = {
-                ...seriesOverrides,
-                type: 'pie',
-                angleKey: this.crossFiltering ? angleField.colId + '-total' : angleField.colId,
-                radiusKey: this.crossFiltering ? field.colId : undefined,
+    private extractCrossFilterSeries(series: AgPieSeriesOptions[]) {
+        const palette = this.chartTheme.palette;
+        const seriesOverrides = this.extractSeriesOverrides();
+
+        const primaryOptions = (seriesOptions: AgPieSeriesOptions) => {
+            return {
+                ...seriesOptions,
+                label: { enabled: false }, // hide labels on primary series
+                highlightStyle: { item: { fill: undefined } },
+                radiusKey: seriesOptions.angleKey,
+                angleKey: seriesOptions.angleKey + '-total',
+                radiusMin: 0,
+                radiusMax: 1,
+                listeners: {
+                    ...seriesOverrides.listeners,
+                    nodeClick: this.crossFilterCallback,
+                },
+                tooltip: {
+                    ...seriesOverrides.tooltip,
+                    renderer: this.getCrossFilterTooltipRenderer(`${seriesOptions.angleName}`),
+                }
             };
-            pieSeries = AgChart.createComponent(options, 'pie.series');
-
-            pieSeries.fills = this.chartTheme.palette.fills;
-            pieSeries.strokes = this.chartTheme.palette.strokes;
-            pieSeries.callout.colors = this.chartTheme.palette.strokes;
-
-            if (this.crossFiltering && pieSeries && !pieSeries.tooltip.renderer) {
-                // only add renderer if user hasn't provided one
-                this.addCrossFilteringTooltipRenderer(pieSeries);
-            }
         }
 
-        pieSeries.angleName = field.displayName!;
-        pieSeries.labelKey = params.category.id;
-        pieSeries.labelName = params.category.name;
-        pieSeries.data = params.data;
-
-        if (this.crossFiltering) {
-            pieSeries.radiusMin = 0;
-            pieSeries.radiusMax = 1;
-
-            const isOpaqueSeries = !opaqueSeries;
-            if (isOpaqueSeries) {
-                pieSeries.fills = changeOpacity(pieSeries.fills, 0.3);
-                pieSeries.strokes = changeOpacity(pieSeries.strokes, 0.3);
-                pieSeries.callout.colors = changeOpacity(pieSeries.strokes, 0.3);
-                pieSeries.showInLegend = false;
-            } else {
-                // @todo(AG-6790): Revisit approach here?
-                // chart.legend.addEventListener('click', (event: LegendClickEvent) => {
-                //     if (opaqueSeries) {
-                //         opaqueSeries.toggleSeriesItem(event.itemId as any, event.enabled);
-                //     }
-                // });
-            }
-            chart.tooltip.delay = 500;
-
-            // disable series highlighting by default
-            pieSeries.highlightStyle.fill = undefined;
-
-            pieSeries.addEventListener("nodeClick", this.crossFilterCallback);
+        const filteredOutOptions = (seriesOptions: AgPieSeriesOptions, angleKey: string) => {
+            return {
+                ...deepMerge({}, primaryOpts),
+                radiusKey: angleKey + '-filtered-out',
+                label: seriesOverrides.label, // labels can be shown on the 'filtered-out' series
+                callout: {
+                    ...seriesOverrides.callout,
+                    colors: seriesOverrides.callout.colors ?? palette.strokes,
+                },
+                fills: changeOpacity(seriesOptions.fills ?? palette.fills, 0.3),
+                strokes: changeOpacity(seriesOptions.strokes ?? palette.strokes, 0.3),
+                showInLegend: false,
+            };
         }
 
-        chart.addSeries(pieSeries);
+        // currently, only single 'doughnut' cross-filter series are supported
+        const primarySeries = series[0];
 
-        return pieSeries;
+        // update primary series
+        const angleKey = primarySeries.angleKey!;
+        const primaryOpts = primaryOptions(primarySeries);
+
+        return [
+            primaryOpts,
+            filteredOutOptions(primarySeries, angleKey)
+        ];
+    }
+
+    private static calculateOffsets(offset: DoughnutOffset) {
+        const outerRadiusOffset = offset.currentOffset;
+        offset.currentOffset -= offset.offsetAmount;
+
+        const innerRadiusOffset = offset.currentOffset;
+        offset.currentOffset -= offset.offsetAmount;
+
+        return { outerRadiusOffset, innerRadiusOffset };
+    }
+
+    private getFields(params: UpdateChartParams) {
+        return this.chartType === 'pie' ? params.fields.slice(0, 1) : params.fields;
+    }
+
+    private getCrossFilterTooltipRenderer(title: string) {
+        return (params: PieTooltipRendererParams) => {
+            const label = params.datum[params.labelKey as string];
+            const ratio = params.datum[params.radiusKey as string];
+            const totalValue = params.angleValue;
+            return { title, content: `${label}: ${totalValue * ratio}` };
+        }
+    }
+
+    protected extractSeriesOverrides() {
+        return this.chartOptions[this.standaloneChartType].series;
+    }
+
+    public crossFilteringReset() {
+        // not required in pie charts
     }
 }

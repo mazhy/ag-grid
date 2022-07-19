@@ -5,13 +5,12 @@ import {
     GridOptionsWrapper,
     IServerSideStore,
     RowNode,
-    ServerSideStoreParams,
-    GetServerSideStoreParamsParams,
-    ServerSideStoreType,
+    ServerSideGroupLevelParams,
+    GetServerSideGroupLevelParamsParams,
     ColumnModel,
     WithoutGridCommon
 } from "@ag-grid-community/core";
-import { PartialStore } from "./partialStore";
+import { InfiniteStore } from "./infiniteStore";
 import { SSRMParams } from "../serverSideRowModel";
 import { FullStore } from "./fullStore";
 
@@ -24,22 +23,22 @@ export class StoreFactory {
     public createStore(ssrmParams: SSRMParams, parentNode: RowNode): IServerSideStore {
         const storeParams = this.getStoreParams(ssrmParams, parentNode);
 
-        const CacheClass = storeParams.storeType === 'partial' ? PartialStore : FullStore;
+        const CacheClass = storeParams.infiniteScroll ? InfiniteStore : FullStore;
 
         return new CacheClass(ssrmParams, storeParams, parentNode);
     }
 
-    private getStoreParams(ssrmParams: SSRMParams, parentNode: RowNode): ServerSideStoreParams {
+    private getStoreParams(ssrmParams: SSRMParams, parentNode: RowNode): ServerSideGroupLevelParams {
 
         const userStoreParams = this.getLevelSpecificParams(parentNode);
 
-        // if user provided overrideParams, we take storeType from there if it exists
-        const storeType = this.getStoreType(userStoreParams);
-        const cacheBlockSize = this.getBlockSize(storeType, userStoreParams);
-        const maxBlocksInCache = this.getMaxBlocksInCache(storeType, ssrmParams, userStoreParams);
+        // if user provided overrideParams, we take infiniteScroll from there if it exists
+        const infiniteScroll = this.isInfiniteScroll(userStoreParams);
+        const cacheBlockSize = this.getBlockSize(infiniteScroll, userStoreParams);
+        const maxBlocksInCache = this.getMaxBlocksInCache(infiniteScroll, ssrmParams, userStoreParams);
 
-        const storeParams: ServerSideStoreParams = {
-            storeType,
+        const storeParams: ServerSideGroupLevelParams = {
+            infiniteScroll,
             cacheBlockSize,
             maxBlocksInCache
         };
@@ -47,10 +46,10 @@ export class StoreFactory {
         return storeParams;
     }
 
-    private getMaxBlocksInCache(storeType: ServerSideStoreType, ssrmParams: SSRMParams, userStoreParams?: ServerSideStoreParams)
+    private getMaxBlocksInCache(infiniteScroll: boolean, ssrmParams: SSRMParams, userStoreParams?: ServerSideGroupLevelParams)
         : number | undefined {
 
-        if (storeType == 'full') { return undefined; }
+        if (!infiniteScroll) { return undefined; }
 
         const maxBlocksInCache = (userStoreParams && userStoreParams.maxBlocksInCache != null)
             ? userStoreParams.maxBlocksInCache
@@ -79,8 +78,8 @@ export class StoreFactory {
         return maxBlocksInCache;
     }
 
-    private getBlockSize(storeType: ServerSideStoreType, userStoreParams?: ServerSideStoreParams): number | undefined {
-        if (storeType == 'full') { return undefined; }
+    private getBlockSize(infiniteScroll: boolean, userStoreParams?: ServerSideGroupLevelParams): number | undefined {
+        if (!infiniteScroll) { return undefined; }
 
         const blockSize = (userStoreParams && userStoreParams.cacheBlockSize != null)
             ? userStoreParams.cacheBlockSize
@@ -93,12 +92,12 @@ export class StoreFactory {
         }
     }
 
-    private getLevelSpecificParams(parentNode: RowNode): ServerSideStoreParams | undefined {
+    private getLevelSpecificParams(parentNode: RowNode): ServerSideGroupLevelParams | undefined {
 
-        const callback = this.gridOptionsWrapper.getServerSideStoreParamsFunc();
+        const callback = this.gridOptionsWrapper.getServerSideGroupLevelParamsFunc();
         if (!callback) { return undefined; }
 
-        const params: WithoutGridCommon<GetServerSideStoreParamsParams> = {
+        const params: WithoutGridCommon<GetServerSideGroupLevelParamsParams> = {
             level: parentNode.level + 1,
             parentRowNode: parentNode.level >= 0 ? parentNode : undefined,
             rowGroupColumns: this.columnModel.getRowGroupColumns(),
@@ -106,27 +105,18 @@ export class StoreFactory {
             pivotMode: this.columnModel.isPivotMode()
         };
 
-        return callback(params);
+        const res = callback(params);
+        if (res.storeType!=null) {
+            res.infiniteScroll = res.storeType==="partial";
+        }
+
+        return res;
     }
 
-    private getStoreType(storeParams?: ServerSideStoreParams): ServerSideStoreType {
-
-        const storeType = (storeParams && storeParams.storeType != null)
-            ? storeParams.storeType
-            : this.gridOptionsWrapper.getServerSideStoreType();
-
-        switch (storeType) {
-            case 'partial':
-            case 'full':
-                return storeType;
-            case null:
-            case undefined:
-                return 'full';
-            default:
-                const serverTypes: ServerSideStoreType[] = ['full', 'partial'];
-                const types = serverTypes.join(', ');
-                console.warn(`AG Grid: invalid Server Side Store Type ${storeType}, valid types are [${types}]`);
-                return 'partial';
-        }
+    private isInfiniteScroll(storeParams?: ServerSideGroupLevelParams): boolean {
+        const res = (storeParams && storeParams.infiniteScroll != null)
+            ? storeParams.infiniteScroll
+            : this.gridOptionsWrapper.isServerSideInfiniteScroll();
+        return res;
     }
 }

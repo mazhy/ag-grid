@@ -267,7 +267,7 @@ export class CellCtrl extends BeanStub {
             const wrapperHeight = eAutoHeightContainer.offsetHeight;
             const autoHeight = wrapperHeight + paddingTop + paddingBottom;
 
-            if (timesCalled<5) {
+            if (timesCalled < 5) {
                 // if not in doc yet, means framework not yet inserted, so wait for next VM turn,
                 // maybe it will be ready next VM turn
                 const doc = this.beans.gridOptionsWrapper.getDocument();
@@ -275,7 +275,7 @@ export class CellCtrl extends BeanStub {
 
                 // this happens in React, where React hasn't put any content in. we say 'possibly'
                 // as a) may not be React and b) the cell could be empty anyway
-                const possiblyNoContentYet = autoHeight==0;
+                const possiblyNoContentYet = autoHeight == 0;
 
                 if (notYetInDom || possiblyNoContentYet) {
                     this.beans.frameworkOverrides.setTimeout(() => measureHeight(timesCalled + 1), 0);
@@ -558,6 +558,7 @@ export class CellCtrl extends BeanStub {
             formatValue: this.formatValue.bind(this),
             data: this.rowNode.data,
             node: this.rowNode,
+            pinned: this.column.getPinned(),
             colDef: this.column.getColDef(),
             column: this.column,
             rowIndex: this.getCellPosition().rowIndex,
@@ -747,11 +748,13 @@ export class CellCtrl extends BeanStub {
 
         // then once that is applied, we remove the highlight with animation
         window.setTimeout(() => {
+            if (!this.isAlive()) { return; }
             this.cellComp.addOrRemoveCssClass(fullName, false);
             this.cellComp.addOrRemoveCssClass(animationFullName, true);
 
             this.eGui.style.transition = `background-color ${fadeDelay}ms`;
             window.setTimeout(() => {
+                if (!this.isAlive()) { return; }
                 // and then to leave things as we got them, we remove the animation
                 this.cellComp.addOrRemoveCssClass(animationFullName, false);
                 this.eGui.style.transition = '';
@@ -987,7 +990,12 @@ export class CellCtrl extends BeanStub {
     }
 
     public focusCell(forceBrowserFocus = false): void {
-        this.beans.focusService.setFocusedCell(this.getCellPosition().rowIndex, this.column, this.rowNode.rowPinned, forceBrowserFocus);
+        this.beans.focusService.setFocusedCell({
+            rowIndex: this.getCellPosition().rowIndex,
+            column: this.column,
+            rowPinned: this.rowNode.rowPinned,
+            forceBrowserFocus
+        });
     }
 
     public onRowIndexChanged(): void {
@@ -1024,7 +1032,7 @@ export class CellCtrl extends BeanStub {
         // see if we need to force browser focus - this can happen if focus is programmatically set
         if (cellFocused && event && event.forceBrowserFocus) {
             const focusEl = this.cellComp.getFocusableElement();
-            focusEl.focus();
+            focusEl.focus({ preventScroll: !!event.preventScrollOnBrowserFocus});
         }
 
         // if another cell was focused, and we are editing, then stop editing

@@ -15,9 +15,8 @@ export abstract class MiniChart extends Component {
     constructor(container: HTMLElement, tooltipName: string) {
         super();
 
-        const scene = new Scene(window.document, this.size, this.size);
+        const scene = new Scene({ document: window.document, width: this.size, height: this.size });
         scene.canvas.element.classList.add('ag-chart-mini-thumbnail-canvas');
-
         scene.root = this.root;
         scene.container = container;
 
@@ -28,6 +27,9 @@ export abstract class MiniChart extends Component {
     @PostConstruct
     protected init() {
         this.scene.canvas.element.title = this.chartTranslationService.translate(this.tooltipName);
+
+        // necessary to force scene graph render as we are not using the standalone factory!
+        this.scene.render();
     }
 
     abstract updateColors(fills: string[], strokes: string[]): void;

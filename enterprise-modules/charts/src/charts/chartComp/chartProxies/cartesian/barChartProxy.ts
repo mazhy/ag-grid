@@ -1,6 +1,6 @@
-import { _, } from "@ag-grid-community/core";
-import { AgChart, BarSeries, CartesianChart, ChartAxisPosition, LegendClickEvent } from "ag-charts-community";
-import { ChartProxyParams, FieldDefinition, UpdateChartParams } from "../chartProxy";
+import { _ } from "@ag-grid-community/core";
+import { AgBarSeriesOptions, ChartAxisPosition, AgCartesianAxisOptions } from "ag-charts-community";
+import { ChartProxyParams, UpdateChartParams } from "../chartProxy";
 import { CartesianChartProxy } from "./cartesianChartProxy";
 import { deepMerge } from "../../utils/object";
 import { hexToRGBA } from "../../utils/color";
@@ -17,82 +17,13 @@ export class BarChartProxy extends CartesianChartProxy {
         this.recreateChart();
     }
 
-    protected createChart(): CartesianChart {
-        const [isBar, isNormalised] = [this.standaloneChartType === 'bar', this.isNormalised()];
-
-        return AgChart.create({
-            container: this.chartProxyParams.parentElement,
-            theme: this.chartTheme,
-            axes: this.getAxes(isBar, isNormalised),
-            series: this.getSeries(isNormalised),
-        });
+    public getData(params: UpdateChartParams): any[] {
+        return this.getDataTransformedData(params);
     }
 
-    public update(params: UpdateChartParams): void {
-        this.updateAxes(params);
+    public getAxes(): AgCartesianAxisOptions[] {
+        const isBar = this.standaloneChartType === 'bar';
 
-        const barSeries = this.chart.series[0] as BarSeries;
-        if (this.crossFiltering) {
-            this.updateCrossFilteringSeries(barSeries, params);
-        } else {
-            barSeries.fills = this.chartTheme.palette.fills;
-            barSeries.strokes = this.chartTheme.palette.strokes;
-        }
-
-        barSeries.data = this.transformData(params.data, params.category.id);
-        barSeries.xKey = params.category.id;
-        barSeries.xName = params.category.name;
-        barSeries.yKeys = params.fields.map(f => f.colId) as any;
-        barSeries.yNames = params.fields.map(f => f.displayName!) as any;
-    }
-
-    private updateCrossFilteringSeries(barSeries: BarSeries, params: UpdateChartParams) {
-        // add additional filtered out field
-        let fields: FieldDefinition[] = params.fields;
-        fields.forEach(field => {
-            const crossFilteringField = {...field};
-            crossFilteringField.colId = field.colId + '-filtered-out';
-            fields.push(crossFilteringField);
-        });
-
-        const palette = this.chartTheme.palette;
-
-        // introduce cross filtering transparent fills
-        const fills: string[] = [];
-        palette.fills.forEach(fill => {
-            fills.push(fill);
-            fills.push(hexToRGBA(fill, '0.3'));
-        });
-        barSeries.fills = fills;
-
-        // introduce cross filtering transparent strokes
-        const strokes: string[] = [];
-        palette.strokes.forEach(stroke => {
-            fills.push(stroke);
-            fills.push(hexToRGBA(stroke, '0.3'));
-        });
-        barSeries.strokes = strokes;
-
-        // disable series highlighting by default
-        barSeries.highlightStyle.fill = undefined;
-
-        // hide 'filtered out' legend items
-        const colIds = params.fields.map(f => f.colId);
-        barSeries.hideInLegend = colIds.filter(colId => colId.indexOf('-filtered-out') !== -1);
-
-        // @todo(AG-6790): Revisit approach here?
-        // sync toggling of legend item with hidden 'filtered out' item
-        // this.chart.legend.addEventListener('click', (event: LegendClickEvent) => {
-        //     barSeries.toggleSeriesItem(event.itemId + '-filtered-out', event.enabled);
-        // });
-
-        this.chart.tooltip.delay = 500;
-
-        // add node click cross filtering callback to series
-        barSeries.addEventListener('nodeClick', this.crossFilterCallback);
-    }
-
-    private getAxes(isBar: boolean, normalised: boolean) {
         const axisOptions = this.getAxesOptions();
         let axes = [
             {
@@ -107,22 +38,71 @@ export class BarChartProxy extends CartesianChartProxy {
             },
         ];
         // special handling to add a default label formatter to show '%' for normalized charts if none is provided
-        if (normalised) {
+        if (this.isNormalised()) {
             const numberAxis = axes[1];
-            numberAxis.label = {...numberAxis.label, formatter: (params: any) => Math.round(params.value) + '%'};
+            numberAxis.label = { ...numberAxis.label, formatter: (params: any) => Math.round(params.value) + '%' };
         }
+
         return axes;
     }
 
-    private getSeries(normalised: boolean) {
+    public getSeries(params: UpdateChartParams): AgBarSeriesOptions[] {
         const groupedCharts = ['groupedColumn', 'groupedBar'];
         const isGrouped = !this.crossFiltering && _.includes(groupedCharts, this.chartType);
-        return [{
-            ...this.chartOptions[this.standaloneChartType].series,
-            type: this.standaloneChartType,
-            grouped: isGrouped,
-            normalizedTo: normalised ? 100 : undefined,
-        }];
+
+        const series: AgBarSeriesOptions[] = params.fields.map(f => (
+            {
+                ...this.extractSeriesOverrides(),
+                type: this.standaloneChartType,
+                grouped: isGrouped,
+                normalizedTo: this.isNormalised() ? 100 : undefined,
+                xKey: params.category.id,
+                xName: params.category.name,
+                yKey: f.colId,
+                yName: f.displayName
+            }
+        ));
+
+        return this.crossFiltering ? this.extractCrossFilterSeries(series) : series;
+    }
+
+    private extractCrossFilterSeries(series: AgBarSeriesOptions[]): AgBarSeriesOptions[] {
+        const palette = this.chartTheme.palette;
+
+        const updatePrimarySeries = (seriesOptions: AgBarSeriesOptions, index: number) => {
+            return {
+                ...seriesOptions,
+                highlightStyle: { item: { fill: undefined } },
+                fill: palette.fills[index],
+                stroke: palette.strokes[index],
+                listeners: {
+                    ...this.extractSeriesOverrides().listeners,
+                    nodeClick: this.crossFilterCallback
+                }
+            }
+        }
+
+        const updateFilteredOutSeries = (seriesOptions: AgBarSeriesOptions): AgBarSeriesOptions => {
+            const yKey = seriesOptions.yKey + '-filtered-out';
+            return {
+                ...deepMerge({}, seriesOptions),
+                yKey,
+                fill: hexToRGBA(seriesOptions.fill!, '0.3'),
+                stroke: hexToRGBA(seriesOptions.stroke!, '0.3'),
+                hideInLegend: [yKey],
+            }
+        }
+
+        const allSeries: AgBarSeriesOptions[] = [];
+        for (let i = 0; i < series.length; i++) {
+            // update primary series
+            const primarySeries = updatePrimarySeries(series[i], i);
+            allSeries.push(primarySeries);
+
+            // add 'filtered-out' series
+            allSeries.push(updateFilteredOutSeries(primarySeries));
+        }
+        return allSeries;
     }
 
     private isNormalised() {

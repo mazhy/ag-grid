@@ -6,14 +6,13 @@ import { wrapOptionsUpdateCode } from './chart-utils';
 export function processFunction(code: string): string {
     return wrapOptionsUpdateCode(
         convertFunctionToProperty(code),
-        'const options = cloneDeep(this.state.options);',
+        'const options = {...this.state.options};',
         'this.setState({ options });');
 }
 
 function getImports(componentFilenames: string[]): string[] {
     const imports = [
         "import React, { Component } from 'react';",
-        "import { cloneDeep } from 'lodash';",
         "import { render } from 'react-dom';",
         "import * as agCharts from 'ag-charts-community';",
         "import { AgChartsReact } from 'ag-charts-react';",

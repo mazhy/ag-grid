@@ -24,8 +24,8 @@ import {
     RowRenderer,
     SortController,
     StoreRefreshAfterParams,
-    RefreshStoreParams,
-    ServerSideStoreState,
+    RefreshServerSideParams,
+    ServerSideGroupLevelState,
     Beans,
     SortModelItem
 } from "@ag-grid-community/core";
@@ -109,7 +109,7 @@ export class ServerSideRowModel extends BeanStub implements IServerSideRowModel 
 
     private verifyProps(): void {
         if (this.gridOptionsWrapper.getInitialGroupOrderComparator() != null) {
-            const message = `AG Grid: initialGroupOrderComparator cannot be used with Server Side Row Model. If using Full Store, then provide the rows to the grid in the desired sort order. If using Partial Store, then sorting is done on the server side, nothing to do with the client.`;
+            const message = `AG Grid: initialGroupOrderComparator cannot be used with Server Side Row Model. If using Full Store, then provide the rows to the grid in the desired sort order. If using Infinite Scroll, then sorting is done on the server side, nothing to do with the client.`;
             _.doOnce(() => console.warn(message), 'SSRM.InitialGroupOrderComparator');
         }
         if (this.gridOptionsWrapper.isRowSelection() && this.gridOptionsWrapper.getRowIdFunc() == null) {
@@ -204,9 +204,9 @@ export class ServerSideRowModel extends BeanStub implements IServerSideRowModel 
             this.updateRowIndexesAndBounds();
         }
 
-        // this event: 1) clears selection 2) updates filters 3) shows/hides 'no rows' overlay
+        // this event shows/hides 'no rows' overlay
         const rowDataChangedEvent: RowDataChangedEvent = {
-            type: Events.EVENT_ROW_DATA_CHANGED,
+            type: Events.EVENT_ROW_DATA_UPDATED,
             api: this.gridApi,
             columnApi: this.columnApi
         };
@@ -409,13 +409,13 @@ export class ServerSideRowModel extends BeanStub implements IServerSideRowModel 
         }
     }
 
-    public refreshStore(params: RefreshStoreParams = {}): void {
+    public refreshStore(params: RefreshServerSideParams = {}): void {
         const route = params.route ? params.route : [];
         this.executeOnStore(route, store => store.refreshStore(params.purge == true));
     }
 
-    public getStoreState(): ServerSideStoreState[] {
-        const res: ServerSideStoreState[] = [];
+    public getStoreState(): ServerSideGroupLevelState[] {
+        const res: ServerSideGroupLevelState[] = [];
         const rootStore = this.getRootStore();
         if (rootStore) {
             rootStore.addStoreStates(res);

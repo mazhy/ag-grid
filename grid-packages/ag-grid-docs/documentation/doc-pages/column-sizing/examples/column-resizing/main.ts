@@ -19,7 +19,7 @@ const columnDefs: ColDef[] = [
   { field: 'total', width: 100 },
 ]
 
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   defaultColDef: {
     resizable: true,
   },
@@ -36,7 +36,7 @@ function sizeToFit() {
 
 function autoSizeAll(skipHeader: boolean) {
   const allColumnIds: string[] = []
-  gridOptions.columnApi!.getAllColumns()!.forEach(column => {
+  gridOptions.columnApi!.getColumns()!.forEach(column => {
     allColumnIds.push(column.getId())
   })
 
@@ -50,5 +50,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   fetch('https://www.ag-grid.com/example-assets/olympic-winners.json')
     .then(response => response.json())
-    .then(data => gridOptions.api!.setRowData(data))
+    .then((data: IOlympicData[]) => gridOptions.api!.setRowData(data))
 })

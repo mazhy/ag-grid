@@ -76,7 +76,7 @@
 |</section>
 |
 | [[note]]
-| | Please refer to our [Compatibility Chart](#ag-grid--angular-compatibility-chart) for Supported Versions of
+| | Please refer to our [Compatibility Guide](/angular-compatibility/) for Supported Versions of
 | | Angular & AG Grid.
 |
 | ## Getting Started with Community Video
@@ -124,8 +124,8 @@
 |
 | ```jsx
 |"dependencies": {
-|    "ag-grid-community": "^27.0.1",
-|    "ag-grid-angular": "^27.0.1",
+|    "ag-grid-community": "@AG_GRID_VERSION@",
+|    "ag-grid-angular": "@AG_GRID_VERSION@",
 |    ...
 | ```
 |
@@ -237,11 +237,11 @@
 |```
 |
 |
-| Copy the content below into the file `app.styles.css`:
+| Copy the content below into the file `styles.scss`:
 |
 |```css
-|@import 'ag-grid-community/dist/styles/ag-grid.css';
-|@import 'ag-grid-community/dist/styles/ag-theme-alpine.css';
+|@import 'ag-grid-community/styles/ag-grid.css';
+|@import 'ag-grid-community/styles/ag-theme-alpine.css';
 |
 |html, body {
 |    height: 100%;
@@ -283,15 +283,15 @@
 | Two CSS files were loaded as follows:
 |
 |```css
-|@import 'ag-grid-community/dist/styles/ag-grid.css'; // Core grid CSS, always needed
-|@import 'ag-grid-community/dist/styles/ag-theme-alpine.css'; // Optional theme CSS
+|@import 'ag-grid-community/styles/ag-grid.css'; // Core grid CSS, always needed
+|@import 'ag-grid-community/styles/ag-theme-alpine.css'; // Optional theme CSS
 | ```
 |
 | The first `ag-grid.css` is always needed. It's the core structural CSS needed by the grid. Without this, the Grid will not work.
 |
 | The second `ag-theme-alpine.css` is the chosen [Grid Theme](/themes/). This is then subsequently applied to the grid by applying the Theme's CSS Class to the grid element `class="ag-theme-alpine"`.
 |
-| You can select from any of the [Grid Provided Themes](/themes-provided/). If you don't like the provided themes you can [Customise the Provided Theme](/themes-customising/) or do not use a Theme and style the grid yourself from scratch.
+| You can select from any of the [Grid Provided Themes](/themes/). If you don't like the provided themes you can [Customise the Provided Theme](/themes/) or do not use a Theme and style the grid yourself from scratch.
 |
 | The dimension of the Grid is also set on the parent DIV via `style={{width: 500, height: 500}}`. The grid will fill 100% in both directions, so size it's parent element to the required dimensions.
 |
@@ -423,9 +423,9 @@
 |
 | ```jsx
 |"dependencies": {
-|    "ag-grid-community": "^27.0.1",
-|    "ag-grid-enterprise": "^27.0.1",
-|    "ag-grid-angular": "^27.0.1",
+|    "ag-grid-community": "@AG_GRID_VERSION@",
+|    "ag-grid-enterprise": "@AG_GRID_VERSION@",
+|    "ag-grid-angular": "@AG_GRID_VERSION@",
 |    ...
 | ```
 |
@@ -457,18 +457,3 @@
 | ];
 |```
 |
-| ## AG Grid & Angular Compatibility Chart
-|
-| [[note]]
-| | Due to a breaking change in Angular 10 you may experience the following error when building:
-| | `Generic type 'ModuleWithProviders<T>' requires 1 type argument(s)`<br/><br/>
-| | If you wish to use Angular 10 with AG Grid versions 18-23 then you need to set `"skipLibCheck": true`
-| | in `tsconfig.app.json` Please note however that this is a workaround and Angular 10 is only
-| | officially supported with AG Grid 24+.
-|
-| | Angular Version | AG Grid Versions                        |
-| | --------------- | --------------------------------------- |
-| | 6               | 18 - 22                                 |
-| | 7 - 9           | 18 - 23+ (23 recommended for Angular 9) |
-| | 7 - 10+         | 24 - 26 (24+ for Angular 10)            |
-| | 8 - 10+         | 27+                                     |

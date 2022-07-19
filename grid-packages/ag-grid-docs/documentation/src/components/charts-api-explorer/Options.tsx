@@ -152,7 +152,7 @@ interface UnionOptionParameters {
     requiresWholeObject: boolean;
     isAlternate: boolean;
     isVisible: boolean;
-    documentation: string;
+    documentation: string | undefined;
     context: GenerateOptionParameters['context'];
 }
 
@@ -242,7 +242,7 @@ const CACHED_MODELS: Record<string, JsonModel> = {};
 /**
  * This displays the list of options in the Standalone Charts API Explorer.
  */
-export const Options = ({ chartType, axisType, updateOption }) => {
+export const Options = ({ jsonData, chartType, axisType, updateOption }) => {
     const [searchText, setSearchText] = useState('');
     const getTrimmedSearchText = () => searchText.trim();
     const matchesSearch = (name: string) => name.toLowerCase().indexOf(getTrimmedSearchText().toLowerCase()) >= 0;
@@ -262,14 +262,14 @@ export const Options = ({ chartType, axisType, updateOption }) => {
         );
     };
     const isRequiresWholeObject = (prop: string) => ['highlightStyle', 'item', 'series'].includes(prop);
-    const isArraySkipped = (prop: string) => ['series', 'axes', 'gridStyle'].includes(prop);
+    const isArraySkipped = (prop: string) => ['series', 'axes', 'gridStyle', 'crossLines'].includes(prop);
     const isEditable = (prop: string) => !['data'].includes(prop);
 
     const isSearching = getTrimmedSearchText() !== '';
 
     const optionsType = chartType === 'pie' ? 'AgPolarChartOptions' : 'AgCartesianChartOptions';
     if (CACHED_MODELS[chartType] == null) {
-        const { interfaceLookup, codeLookup } = loadLookups('charts-api', 'charts-api/api.json');
+        const { interfaceLookup, codeLookup } = loadLookups('charts-api', jsonData, 'charts-api/api.json');
         const model = CACHED_MODELS[chartType] = buildModel(optionsType, interfaceLookup, codeLookup);
         const seriesModelDesc = model.properties['series']?.desc;
         if (seriesModelDesc.type === 'array' && seriesModelDesc.elements.type === 'union') {
@@ -357,7 +357,7 @@ const generateOptions = ({
         isArraySkipped,
         isEditable,
     } = context;
-    let elements = [];
+    let elements: React.ReactFragment[] = [];
 
     Object.entries(model.properties).forEach(([name, prop]) => {
         const key = `${prefix}${name}`;
@@ -439,6 +439,22 @@ const generateOptions = ({
                         requiresWholeObject={requiresWholeObject}
                         context={context}
                     />
+                </ComplexOption>
+            );
+        } else if (desc.type === 'array' && desc.elements.type === 'nested-object' && isArraySkipped(name)) {
+            elements.push(
+                <ComplexOption
+                    {...commonProps}
+                    isVisible={isVisible || childMatchesSearch(desc)}
+                    isSearching={isSearching}>
+                    {generateOptions({
+                        model: desc.elements.model,
+                        prefix: `${key}.`,
+                        parentMatchesSearch: parentMatchesSearch || (isSearching && matchesSearch(name)),
+                        requiresWholeObject: requiresWholeObject || isRequiresWholeObject(name),
+                        isAlternate: !isAlternate,
+                        context,
+                    })}
                 </ComplexOption>
             );
         } else if (desc.type === 'function') {

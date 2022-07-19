@@ -1,4 +1,4 @@
-import { AgChartOptions, AgHierarchyChartOptions, AgPolarChartOptions, AgCartesianChartOptions, AgChartThemePalette } from "../agChartOptions";
+import { AgChartOptions, AgHierarchyChartOptions, AgPolarChartOptions, AgCartesianChartOptions, AgChartThemePalette, AgCrossLineOptions } from "../agChartOptions";
 import { CartesianChart } from "../cartesianChart";
 import { PolarChart } from "../polarChart";
 import { HierarchyChart } from "../hierarchyChart";
@@ -6,7 +6,7 @@ import { SeriesOptionsTypes, DEFAULT_CARTESIAN_CHART_OVERRIDES, DEFAULT_BAR_CHAR
 import { jsonMerge, DELETE, jsonWalk } from "../../util/json";
 import { applySeriesTransform } from "./transforms";
 import { getChartTheme } from "./themes";
-import { processSeriesOptions } from "./prepareSeries";
+import { processSeriesOptions, SeriesOptions } from "./prepareSeries";
 
 export type ChartType = CartesianChart | PolarChart | HierarchyChart;
 export type AxesOptionsTypes = NonNullable<AgCartesianChartOptions['axes']>[number];
@@ -14,7 +14,7 @@ export type AxesOptionsTypes = NonNullable<AgCartesianChartOptions['axes']>[numb
 export function optionsType(
     input: { type?: AgChartOptions['type'], series?: { type?: SeriesOptionsTypes['type']}[]}
 ): NonNullable<AgChartOptions['type']> {
-    return input.type || input.series?.[0]?.type || 'cartesian';
+    return input.type ?? input.series?.[0]?.type ?? 'line';
 }
 
 export function isAgCartesianChartOptions(input: AgChartOptions): input is AgCartesianChartOptions {
@@ -131,20 +131,27 @@ export function prepareOptions<T extends AgChartOptions>(newOptions: T, ...fallb
         prepareMainOptions<T>(defaultOverrides as T, options);
 
     // Special cases where we have arrays of elements which need their own defaults.
-    mergedOptions.series = processSeriesOptions(mergedOptions.series || [])
-        .map((s: SeriesOptionsTypes) => {
-            const type = s.type ? s.type :
-                isSeriesOptionType(userSuppliedOptionsType) ? userSuppliedOptionsType :
-                defaultSeriesType;
-            const series = { ...s, type };
-            return prepareSeries(context, series, seriesThemes[type] || {});
-        });
+
+    // Apply series themes before calling processSeriesOptions() as it reduces and renames some
+    // properties, and in that case then cannot correctly have themes applied.
+    mergedOptions.series = processSeriesOptions(
+        (mergedOptions.series as SeriesOptions[] || [])
+            .map(s => {
+                const type = s.type ? s.type :
+                    isSeriesOptionType(userSuppliedOptionsType) ? userSuppliedOptionsType :
+                    defaultSeriesType;
+
+                return jsonMerge(seriesThemes[type] || {}, { ...s, type });
+            })
+    )
+        .map(s => prepareSeries(context, s)) as any[];
+
     if (isAgCartesianChartOptions(mergedOptions)) {
-        (mergedOptions.axes || []).forEach((a, i) => {
+        mergedOptions.axes = mergedOptions.axes?.map(a => {
             const type = a.type || 'number';
             const axis = { ...a, type };
             const axesTheme = jsonMerge(axesThemes[type], axesThemes[type][a.position || 'unknown'] || {});
-            mergedOptions.axes![i] = prepareAxis(axis, axesTheme);
+            return prepareAxis(axis, axesTheme);
         });
     }
 
@@ -165,7 +172,7 @@ function sanityCheckOptions<T extends AgChartOptions>(options: T) {
 
 function prepareMainOptions<T>(defaultOverrides: T, options: T): { context: PreparationContext, mergedOptions: T; axesThemes: any; seriesThemes: any; } {
     const { theme, cleanedTheme, axesThemes, seriesThemes } = prepareTheme(options);
-    const context: PreparationContext = { colourIndex: 0, palette: theme.palette };        
+    const context: PreparationContext = { colourIndex: 0, palette: theme.palette };
     const mergedOptions = jsonMerge(defaultOverrides, cleanedTheme, options);
 
     return { context, mergedOptions, axesThemes, seriesThemes };
@@ -203,7 +210,7 @@ function calculateSeriesPalette<T extends SeriesOptionsTypes>(context: Preparati
     } = {};
 
     const { palette: { fills, strokes } } = context;
-    
+
     const inputAny = (input as any);
     let colourCount = countArrayElements(inputAny['yKeys'] || []) || 1; // Defaults to 1 if no yKeys.
     switch (input.type) {
@@ -221,8 +228,11 @@ function calculateSeriesPalette<T extends SeriesOptionsTypes>(context: Preparati
             paletteOptions.stroke = takeColours(context, strokes, 1)[0];
             break;
         case 'scatter':
-            paletteOptions.fill = takeColours(context, fills, 1)[0];
-            // fall-through - only fills varies for `scatter`.
+            paletteOptions.marker = {
+                stroke: takeColours(context, strokes, 1)[0],
+                fill: takeColours(context, fills, 1)[0],
+            };
+            break;
         case 'line':
             paletteOptions.stroke = takeColours(context, fills, 1)[0];
             paletteOptions.marker = {
@@ -240,10 +250,24 @@ function calculateSeriesPalette<T extends SeriesOptionsTypes>(context: Preparati
     return paletteOptions as T;
 }
 
-function prepareAxis<T extends AxesOptionsTypes>(input: T, ...defaults: T[]): T {
+function prepareAxis<T extends AxesOptionsTypes>(axis: T, axisTheme: Omit<T, "crossLines"> & { crossLines: AgCrossLineOptions }): T {
     // Remove redundant theme overload keys.
     const removeOptions = { top: DELETE, bottom: DELETE, left: DELETE, right: DELETE } as any;
-    return jsonMerge(...defaults, input, removeOptions);
+
+    // Special cross lines case where we have an arrays of cross line elements which need their own defaults.
+    if (axis.crossLines) {
+        if (!Array.isArray(axis.crossLines)) {
+            console.warn('AG Charts - axis[].crossLines should be an array.');
+            axis.crossLines = [];
+        }
+
+        const { crossLines: crossLinesTheme } = axisTheme;
+        axis.crossLines = axis.crossLines.map((crossLine) => jsonMerge(crossLinesTheme, crossLine));
+    }
+
+    const cleanTheme = { crossLines: DELETE };
+
+    return jsonMerge(axisTheme, cleanTheme, axis, removeOptions);
 }
 
 function prepareEnabledOptions<T extends AgChartOptions>(options: T, mergedOptions: any) {

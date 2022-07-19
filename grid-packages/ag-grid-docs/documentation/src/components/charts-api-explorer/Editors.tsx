@@ -20,6 +20,7 @@ type AliasTypeProps<T> = {
     breakIndex?: number,
     min?: T,
     max?: T,
+    step?: T,
     unit?: string,
 };
 
@@ -47,6 +48,7 @@ const FONT_SIZE_EDITOR_PROPS: AliasTypeProps<FontSize> = {
 };
 
 const OPACITY_PROPS: AliasTypeProps<Opacity> = {
+    step: 0.1,
     min: 0,
     max: 1,
 };
@@ -94,6 +96,8 @@ export const getPrimitivePropertyEditor = (desc: JsonProperty) => {
             case 'FontStyle':
             case 'FontWeight':
                 return PresetEditor;
+            case 'DataValue':
+                return JsonEditor;
         }
     }
 
@@ -190,13 +194,13 @@ export const getPrimitiveEditor = ({ meta, desc }: JsonModelProperty, key: strin
     return { editor, editorProps: { ...meta, ...editorProps } };
 };
 
-const setStepEditorProp = (editorProps: Record<string, any>, { min, max }: JsonModelProperty['meta']) => {
-    if (min == null || max == null) {
+const setStepEditorProp = (editorProps: Record<string, any>, { min, max, step }: JsonModelProperty['meta']) => {
+    if (min == null || max == null || step != null) {
         return;
     }
-    if (max - min <= 1) {
+    if ((max - min) <= 1) {
         editorProps.step = 0.05;
-    } else if (max - min <= 10) {
+    } else if ((max - min) <= 10) {
         editorProps.step = 0.1;
     }
 };
@@ -261,10 +265,30 @@ export const StringEditor = ({ value, toStringValue, fromStringValue, onChange }
 
 export const ArrayEditor = props =>
     <StringEditor
-        toStringValue={array => array ? array.join(', ') : ''}
-        fromStringValue={value => value.split(',').filter(x => x != null && x.trim().length).map(x => JSON.parse(x))}
+        toStringValue={array => array ? JSON.stringify(array) : '[]'}
+        fromStringValue={(value) => {
+            try {
+                return JSON.parse(value);
+            } catch (error) {
+                return undefined;
+            }
+        }}
         {...props}
     />;
+
+export const JsonEditor = (props) => (
+    <StringEditor
+        toStringValue={(json) => (json ? JSON.stringify(json) : '')}
+        fromStringValue={(value) => {
+            try {
+                return JSON.parse(value);
+            } catch (error) {
+                return undefined;
+            }
+        }}
+        {...props}
+    />
+);
 
 export const BooleanEditor = ({ value, onChange }) => <PresetEditor options={[false, true]} value={value} onChange={onChange} />;
 

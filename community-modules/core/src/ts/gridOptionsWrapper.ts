@@ -23,6 +23,7 @@ import { IViewportDatasource } from './interfaces/iViewportDatasource';
 import { ModuleNames } from './modules/moduleNames';
 import { ModuleRegistry } from './modules/moduleRegistry';
 import { PropertyKeys } from './propertyKeys';
+import { _ } from './utils';
 import { getScrollbarWidth } from './utils/browser';
 import { doOnce } from './utils/function';
 import { fuzzyCheckStrings } from './utils/fuzzyMatch';
@@ -77,77 +78,77 @@ export interface PropertyChangedEvent extends AgEvent {
 export class GridOptionsWrapper {
     private static MIN_COL_WIDTH = 10;
 
-    public static PROP_HEADER_HEIGHT = 'headerHeight';
-    public static PROP_GROUP_REMOVE_SINGLE_CHILDREN = 'groupRemoveSingleChildren';
-    public static PROP_GROUP_REMOVE_LOWEST_SINGLE_CHILDREN = 'groupRemoveLowestSingleChildren';
-    public static PROP_PIVOT_HEADER_HEIGHT = 'pivotHeaderHeight';
-    public static PROP_SUPPRESS_CLIPBOARD_PASTE = 'suppressClipboardPaste';
+    public static PROP_HEADER_HEIGHT: 'headerHeight' = 'headerHeight';
+    public static PROP_GROUP_REMOVE_SINGLE_CHILDREN: 'groupRemoveSingleChildren' = 'groupRemoveSingleChildren';
+    public static PROP_GROUP_REMOVE_LOWEST_SINGLE_CHILDREN: 'groupRemoveLowestSingleChildren' = 'groupRemoveLowestSingleChildren';
+    public static PROP_PIVOT_HEADER_HEIGHT: 'pivotHeaderHeight' = 'pivotHeaderHeight';
+    public static PROP_SUPPRESS_CLIPBOARD_PASTE: 'suppressClipboardPaste' = 'suppressClipboardPaste';
 
-    public static PROP_GROUP_HEADER_HEIGHT = 'groupHeaderHeight';
-    public static PROP_PIVOT_GROUP_HEADER_HEIGHT = 'pivotGroupHeaderHeight';
+    public static PROP_GROUP_HEADER_HEIGHT: 'groupHeaderHeight' = 'groupHeaderHeight';
+    public static PROP_PIVOT_GROUP_HEADER_HEIGHT: 'pivotGroupHeaderHeight' = 'pivotGroupHeaderHeight';
 
-    public static PROP_NAVIGATE_TO_NEXT_CELL = 'navigateToNextCell';
-    public static PROP_TAB_TO_NEXT_CELL = 'tabToNextCell';
-    public static PROP_NAVIGATE_TO_NEXT_HEADER = 'navigateToNextHeader';
-    public static PROP_TAB_TO_NEXT_HEADER = 'tabToNextHeader';
+    public static PROP_NAVIGATE_TO_NEXT_CELL: 'navigateToNextCell' = 'navigateToNextCell';
+    public static PROP_TAB_TO_NEXT_CELL: 'tabToNextCell' = 'tabToNextCell';
+    public static PROP_NAVIGATE_TO_NEXT_HEADER: 'navigateToNextHeader' = 'navigateToNextHeader';
+    public static PROP_TAB_TO_NEXT_HEADER: 'tabToNextHeader' = 'tabToNextHeader';
 
-    public static PROP_IS_EXTERNAL_FILTER_PRESENT = 'isExternalFilterPresent';
-    public static PROP_DOES_EXTERNAL_FILTER_PASS = 'doesExternalFilterPass';
+    public static PROP_IS_EXTERNAL_FILTER_PRESENT: 'isExternalFilterPresent' = 'isExternalFilterPresent';
+    public static PROP_DOES_EXTERNAL_FILTER_PASS: 'doesExternalFilterPass' = 'doesExternalFilterPass';
 
-    public static PROP_FLOATING_FILTERS_HEIGHT = 'floatingFiltersHeight';
+    public static PROP_FLOATING_FILTERS_HEIGHT: 'floatingFiltersHeight' = 'floatingFiltersHeight';
 
-    public static PROP_SUPPRESS_ROW_CLICK_SELECTION = 'suppressRowClickSelection';
-    public static PROP_SUPPRESS_ROW_DRAG = 'suppressRowDrag';
-    public static PROP_SUPPRESS_MOVE_WHEN_ROW_DRAG = 'suppressMoveWhenRowDragging';
+    public static PROP_SUPPRESS_ROW_CLICK_SELECTION: 'suppressRowClickSelection' = 'suppressRowClickSelection';
+    public static PROP_SUPPRESS_ROW_DRAG: 'suppressRowDrag' = 'suppressRowDrag';
+    public static PROP_SUPPRESS_MOVE_WHEN_ROW_DRAG: 'suppressMoveWhenRowDragging' = 'suppressMoveWhenRowDragging';
 
-    public static PROP_GET_ROW_CLASS = 'getRowClass';
-    public static PROP_GET_ROW_STYLE = 'getRowStyle';
+    public static PROP_GET_ROW_CLASS: 'getRowClass' = 'getRowClass';
+    public static PROP_GET_ROW_STYLE: 'getRowStyle' = 'getRowStyle';
 
-    public static PROP_GET_ROW_HEIGHT = 'getRowHeight';
+    public static PROP_GET_ROW_HEIGHT: 'getRowHeight' = 'getRowHeight';
 
-    public static PROP_POPUP_PARENT = 'popupParent';
+    public static PROP_POPUP_PARENT: 'popupParent' = 'popupParent';
 
-    public static PROP_DOM_LAYOUT = 'domLayout';
-    public static PROP_ROW_CLASS = 'rowClass';
+    public static PROP_DOM_LAYOUT: 'domLayout' = 'domLayout';
+    public static PROP_ROW_CLASS: 'rowClass' = 'rowClass';
 
-    public static PROP_FILL_HANDLE_DIRECTION = 'fillHandleDirection';
+    public static PROP_FILL_HANDLE_DIRECTION: 'fillHandleDirection' = 'fillHandleDirection';
 
-    public static PROP_GROUP_ROW_AGG_NODES = 'groupRowAggNodes';
-    public static PROP_GET_GROUP_ROW_AGG = 'getGroupRowAgg';
-    public static PROP_GET_BUSINESS_KEY_FOR_NODE = 'getBusinessKeyForNode';
-    public static PROP_GET_CHILD_COUNT = 'getChildCount';
-    public static PROP_PROCESS_ROW_POST_CREATE = 'processRowPostCreate';
-    public static PROP_GET_ROW_NODE_ID = 'getRowNodeId';
-    public static PROP_GET_ROW_ID = 'getRowId';
-    public static PROP_IS_FULL_WIDTH_CELL = 'isFullWidthCell';
-    public static PROP_IS_FULL_WIDTH_ROW = 'isFullWidthRow';
-    public static PROP_IS_ROW_SELECTABLE = 'isRowSelectable';
-    public static PROP_IS_ROW_MASTER = 'isRowMaster';
-    public static PROP_POST_SORT = 'postSort';
-    public static PROP_POST_SORT_ROWS = 'postSortRows';
-    public static PROP_GET_DOCUMENT = 'getDocument';
-    public static PROP_POST_PROCESS_POPUP = 'postProcessPopup';
-    public static PROP_DEFAULT_GROUP_ORDER_COMPARATOR = 'defaultGroupOrderComparator';
-    public static PROP_INITIAL_GROUP_ORDER_COMPARATOR = 'initialGroupOrderComparator';
-    public static PROP_PAGINATION_NUMBER_FORMATTER = 'paginationNumberFormatter';
+    public static PROP_GROUP_ROW_AGG_NODES: 'groupRowAggNodes' = 'groupRowAggNodes';
+    public static PROP_GET_GROUP_ROW_AGG: 'getGroupRowAgg' = 'getGroupRowAgg';
+    public static PROP_GET_BUSINESS_KEY_FOR_NODE: 'getBusinessKeyForNode' = 'getBusinessKeyForNode';
+    public static PROP_GET_CHILD_COUNT: 'getChildCount' = 'getChildCount';
+    public static PROP_PROCESS_ROW_POST_CREATE: 'processRowPostCreate' = 'processRowPostCreate';
+    public static PROP_GET_ROW_NODE_ID: 'getRowNodeId' = 'getRowNodeId';
+    public static PROP_GET_ROW_ID: 'getRowId' = 'getRowId';
+    public static PROP_IS_FULL_WIDTH_CELL: 'isFullWidthCell' = 'isFullWidthCell';
+    public static PROP_IS_FULL_WIDTH_ROW: 'isFullWidthRow' = 'isFullWidthRow';
+    public static PROP_IS_ROW_SELECTABLE: 'isRowSelectable' = 'isRowSelectable';
+    public static PROP_IS_ROW_MASTER: 'isRowMaster' = 'isRowMaster';
+    public static PROP_POST_SORT: 'postSort' = 'postSort';
+    public static PROP_POST_SORT_ROWS: 'postSortRows' = 'postSortRows';
+    public static PROP_GET_DOCUMENT: 'getDocument' = 'getDocument';
+    public static PROP_POST_PROCESS_POPUP: 'postProcessPopup' = 'postProcessPopup';
+    public static PROP_DEFAULT_GROUP_ORDER_COMPARATOR: 'defaultGroupOrderComparator' = 'defaultGroupOrderComparator';
+    public static PROP_INITIAL_GROUP_ORDER_COMPARATOR: 'initialGroupOrderComparator' = 'initialGroupOrderComparator';
+    public static PROP_PAGINATION_NUMBER_FORMATTER: 'paginationNumberFormatter' = 'paginationNumberFormatter';
 
-    public static PROP_GET_CONTEXT_MENU_ITEMS = 'getContextMenuItems';
-    public static PROP_GET_MAIN_MENU_ITEMS = 'getMainMenuItems';
+    public static PROP_GET_CONTEXT_MENU_ITEMS: 'getContextMenuItems' = 'getContextMenuItems';
+    public static PROP_GET_MAIN_MENU_ITEMS: 'getMainMenuItems' = 'getMainMenuItems';
 
-    public static PROP_PROCESS_CELL_FOR_CLIPBOARD = 'processCellForClipboard';
-    public static PROP_PROCESS_CELL_FROM_CLIPBOARD = 'processCellFromClipboard';
-    public static PROP_SEND_TO_CLIPBOARD = 'sendToClipboard';
+    public static PROP_PROCESS_CELL_FOR_CLIPBOARD: 'processCellForClipboard' = 'processCellForClipboard';
+    public static PROP_PROCESS_CELL_FROM_CLIPBOARD: 'processCellFromClipboard' = 'processCellFromClipboard';
+    public static PROP_SEND_TO_CLIPBOARD: 'sendToClipboard' = 'sendToClipboard';
 
-    public static PROP_PROCESS_TO_SECONDARY_COLDEF = 'processSecondaryColDef';
-    public static PROP_PROCESS_SECONDARY_COL_GROUP_DEF = 'processSecondaryColGroupDef';
+    public static PROP_PROCESS_PIVOT_RESULT_COL_DEF: 'processPivotResultColDef' = 'processPivotResultColDef';
+    public static PROP_PROCESS_PIVOT_RESULT_COL_GROUP_DEF: 'processPivotResultColGroupDef' = 'processPivotResultColGroupDef';
 
-    public static PROP_GET_CHART_TOOLBAR_ITEMS = 'getChartToolbarItems';
+    public static PROP_GET_CHART_TOOLBAR_ITEMS: 'getChartToolbarItems' = 'getChartToolbarItems';
 
-    public static PROP_GET_SERVER_SIDE_STORE_PARAMS = 'getServerSideStoreParams';
-    public static PROP_IS_SERVER_SIDE_GROUPS_OPEN_BY_DEFAULT = 'isServerSideGroupOpenByDefault';
-    public static PROP_IS_APPLY_SERVER_SIDE_TRANSACTION = 'isApplyServerSideTransaction';
-    public static PROP_IS_SERVER_SIDE_GROUP = 'isServerSideGroup';
-    public static PROP_GET_SERVER_SIDE_GROUP_KEY = 'getServerSideGroupKey';
+    public static PROP_GET_SERVER_SIDE_GROUP_PARAMS: 'getServerSideGroupLevelParams' = 'getServerSideGroupLevelParams';
+    public static PROP_IS_SERVER_SIDE_GROUPS_OPEN_BY_DEFAULT: 'isServerSideGroupOpenByDefault' = 'isServerSideGroupOpenByDefault';
+    public static PROP_IS_APPLY_SERVER_SIDE_TRANSACTION: 'isApplyServerSideTransaction' = 'isApplyServerSideTransaction';
+    public static PROP_IS_SERVER_SIDE_GROUP: 'isServerSideGroup' = 'isServerSideGroup';
+    public static PROP_GET_SERVER_SIDE_GROUP_KEY: 'getServerSideGroupKey' = 'getServerSideGroupKey';
 
     @Autowired('gridOptions') private readonly gridOptions: GridOptions;
     @Autowired('eventService') private readonly eventService: EventService;
@@ -215,7 +216,7 @@ export class GridOptionsWrapper {
 
         if (this.isGroupRemoveSingleChildren() && this.isGroupHideOpenParents()) {
             console.warn(
-                "AG Grid: groupRemoveSingleChildren and groupHideOpenParents do not work with each other, you need to pick one. And don't ask us how to us these together on our support forum either you will get the same answer!"
+                "AG Grid: groupRemoveSingleChildren and groupHideOpenParents do not work with each other, you need to pick one. And don't ask us how to use these together on our support forum either, you will get the same answer!"
             );
         }
 
@@ -238,6 +239,12 @@ export class GridOptionsWrapper {
 
         if (!this.isEnableRangeSelection() && (this.isEnableRangeHandle() || this.isEnableFillHandle())) {
             console.warn("AG Grid: 'enableRangeHandle' and 'enableFillHandle' will not work unless 'enableRangeSelection' is set to true");
+        }
+
+        if (this.isGroupRowsSticky() && this.isGroupHideOpenParents()) {
+            console.warn(
+                "AG Grid: groupRowsSticky and groupHideOpenParents do not work with each other, you need to pick one."
+            );
         }
 
         const warnOfDeprecaredIcon = (name: string) => {
@@ -318,13 +325,13 @@ export class GridOptionsWrapper {
     * @param callback User provided callback
     * @returns Wrapped callback where the params object not require api, columnApi and context
     */
-    private mergeGridCommonParams<P extends AgGridCommon, T>(callback: ((params: P) => T) | undefined):
+    private mergeGridCommonParams<P extends AgGridCommon<any>, T>(callback: ((params: P) => T) | undefined):
         ((params: WithoutGridCommon<P>) => T) | undefined {
         if (callback) {
             const wrapped = (callbackParams: WithoutGridCommon<P>): T => {
                 const mergedParams = { ...callbackParams, api: this.getApi()!, columnApi: this.getColumnApi()!, context: this.getContext() } as P;
                 return callback(mergedParams);
-            }
+            };
             return wrapped;
         }
         return callback;
@@ -497,6 +504,12 @@ export class GridOptionsWrapper {
         return this.gridOptions.autoGroupColumnDef;
     }
 
+    public isColumnsSortingCoupledToGroup(): boolean {
+        const autoGroupColumnDef = this.getAutoGroupColumnDef();
+        const isClientSideRowModel = this.isRowModelDefault();
+        return isClientSideRowModel && !autoGroupColumnDef?.comparator;
+    }
+
     public isGroupMultiAutoColumn() {
         if (this.gridOptions.groupDisplayType) {
             return this.matchesGroupDisplayType('multipleColumns', this.gridOptions.groupDisplayType);
@@ -511,6 +524,10 @@ export class GridOptionsWrapper {
 
         return this.gridOptions.groupDisplayType ?
             this.matchesGroupDisplayType('groupRows', this.gridOptions.groupDisplayType) : false;
+    }
+
+    public isGroupRowsSticky(): boolean {
+        return isTrue(this.gridOptions.groupRowsSticky);
     }
 
     public isGroupSuppressAutoColumn() {
@@ -569,6 +586,10 @@ export class GridOptionsWrapper {
 
     public isSuppressDragLeaveHidesColumns() {
         return isTrue(this.gridOptions.suppressDragLeaveHidesColumns);
+    }
+
+    public isSuppressRowGroupHidesColumns() {
+        return isTrue(this.gridOptions.suppressRowGroupHidesColumns);
     }
 
     public isSuppressScrollOnNewData() {
@@ -730,12 +751,12 @@ export class GridOptionsWrapper {
         return this.gridOptions.rowClassRules;
     }
 
-    public getServerSideStoreType(): string | undefined {
-        return this.gridOptions.serverSideStoreType;
+    public isServerSideInfiniteScroll(): boolean {
+        return isTrue(this.gridOptions.serverSideInfiniteScroll);
     }
 
-    public getServerSideStoreParamsFunc() {
-        return this.mergeGridCommonParams(this.gridOptions.getServerSideStoreParams);
+    public getServerSideGroupLevelParamsFunc() {
+        return this.mergeGridCommonParams(this.gridOptions.getServerSideGroupLevelParams);
     }
 
     public getCreateChartContainerFunc() {
@@ -817,7 +838,7 @@ export class GridOptionsWrapper {
     }
 
     public isReadOnlyEdit(): boolean {
-        return isTrue(this.gridOptions.readOnlyEdit);;
+        return isTrue(this.gridOptions.readOnlyEdit);
     }
 
     public isImmutableData() {
@@ -895,6 +916,14 @@ export class GridOptionsWrapper {
 
     public getInfiniteInitialRowCount(): number | undefined {
         return this.gridOptions.infiniteInitialRowCount;
+    }
+
+    public getServerSideInitialRowCount(): number {
+        const rowCount = this.gridOptions.serverSideInitialRowCount;
+        if (typeof rowCount === 'number' && rowCount > 0) {
+            return rowCount;
+        }
+        return 1;
     }
 
     public isPurgeClosedRowNodes() {
@@ -1148,7 +1177,7 @@ export class GridOptionsWrapper {
         return this.gridOptions.sortingOrder;
     }
 
-    public getAlignedGrids(): GridOptions[] | undefined {
+    public getAlignedGrids(): { api?: GridApi | null, columnApi?: ColumnApi | null }[] | undefined {
         return this.gridOptions.alignedGrids;
     }
 
@@ -1291,7 +1320,7 @@ export class GridOptionsWrapper {
         }
         // this is the deprecated way, so provide a proxy to make it compatible
         if (groupRowAggNodes) {
-            return (params: WithoutGridCommon<GetGroupRowAggParams>) => groupRowAggNodes(params.nodes)
+            return (params: WithoutGridCommon<GetGroupRowAggParams>) => groupRowAggNodes(params.nodes);
         }
     }
 
@@ -1310,7 +1339,7 @@ export class GridOptionsWrapper {
         }
         // this is the deprecated way, so provide a proxy to make it compatible
         if (getRowNodeId) {
-            return (params: WithoutGridCommon<GetRowIdParams>) => getRowNodeId(params.data)
+            return (params: WithoutGridCommon<GetRowIdParams>) => getRowNodeId(params.data);
         }
     }
 
@@ -1327,7 +1356,7 @@ export class GridOptionsWrapper {
     }
 
     public getTabToNextCellFunc() {
-        return this.mergeGridCommonParams(this.gridOptions.tabToNextCell)
+        return this.mergeGridCommonParams(this.gridOptions.tabToNextCell);
     }
 
     public getGridTabIndex(): string {
@@ -1360,11 +1389,12 @@ export class GridOptionsWrapper {
         return isTrue(this.gridOptions.aggregateOnlyChangedColumns);
     }
 
-    public getProcessSecondaryColDefFunc() {
-        return this.gridOptions.processSecondaryColDef;
+    public getProcessPivotResultColDefFunc() {
+        return this.gridOptions.processPivotResultColDef || this.gridOptions.processSecondaryColDef;
     }
-    public getProcessSecondaryColGroupDefFunc() {
-        return this.gridOptions.processSecondaryColGroupDef;
+
+    public getProcessPivotResultColGroupDefFunc() {
+        return this.gridOptions.processPivotResultColGroupDef || this.gridOptions.processSecondaryColGroupDef;
     }
 
     public getSendToClipboardFunc() {
@@ -1399,14 +1429,55 @@ export class GridOptionsWrapper {
         return zeroOrGreater(this.gridOptions.viewportRowModelBufferSize, DEFAULT_VIEWPORT_ROW_MODEL_BUFFER_SIZE);
     }
 
-    public isServerSideSortingAlwaysResets() {
-        return isTrue(this.gridOptions.serverSideSortingAlwaysResets);
+    public isServerSideSortAllLevels() {
+        const isEnabled = isTrue(this.gridOptions.serverSideSortAllLevels);
+        if (!this.isRowModelServerSide() && isEnabled) {
+            doOnce(() => console.warn('AG Grid: The `serverSideSortAllLevels` property can only be used with the server side row model.'), 'serverSideSortAllLevels');
+            return false;
+        }
+        return isEnabled;
     }
 
-    public isServerSideFilteringAlwaysResets() {
-        return isTrue(this.gridOptions.serverSideFilteringAlwaysResets);
+    public isServerSideFilterAllLevels() {
+        const isEnabled = isTrue(this.gridOptions.serverSideFilterAllLevels);
+        if (!this.isRowModelServerSide() && isEnabled) {
+            doOnce(() => console.warn('AG Grid: The `serverSideFilterAllLevels` property can only be used with the server side row model.'), 'serverSideFilterAllLevels');
+            return false;
+        }
+        return isEnabled;
     }
 
+    public isServerSideSortOnServer() {
+        const isEnabled = isTrue(this.gridOptions.serverSideSortOnServer);
+
+        if (!this.isRowModelServerSide() && isEnabled) {
+            doOnce(() => console.warn('AG Grid: The `serverSideSortOnServer` property can only be used with the server side row model.'), 'serverSideSortOnServerRowModel');
+            return false;
+        }
+
+        if (this.isTreeData() && isEnabled) {
+            doOnce(() => console.warn('AG Grid: The `serverSideSortOnServer` property cannot be used while using tree data.'), 'serverSideSortOnServerTreeData');
+            return false;
+        }
+
+        return isEnabled;
+    }
+
+    public isServerSideFilterOnServer() {
+        const isEnabled = isTrue(this.gridOptions.serverSideFilterOnServer);
+
+        if (!this.isRowModelServerSide() && isEnabled) {
+            doOnce(() => console.warn('AG Grid: The `serverSideFilterOnServer` property can only be used with the server side row model.'), 'serverSideFilterOnServerRowModel');
+            return false;
+        }
+
+        if (this.isTreeData() && isEnabled) {
+            doOnce(() => console.warn('AG Grid: The `serverSideFilterOnServer` property cannot be used while using tree data.'), 'serverSideFilterOnServerTreeData');
+            return false;
+        }
+
+        return isEnabled;
+    }
     public getPostSortFunc() {
         const { postSortRows, postSort } = this.gridOptions;
         if (postSortRows) {
@@ -1439,12 +1510,11 @@ export class GridOptionsWrapper {
         return exists(this.gridOptions.clipboardDelimiter) ? this.gridOptions.clipboardDelimiter : '\t';
     }
 
-    public setProperty(key: string, value: any, force = false): void {
-        const gridOptionsNoType = this.gridOptions as any;
-        const previousValue = gridOptionsNoType[key];
+    public setProperty<K extends keyof GridOptions>(key: K, value: GridOptions[K], force = false): void {
+        const previousValue = this.gridOptions[key];
 
         if (force || previousValue !== value) {
-            gridOptionsNoType[key] = value;
+            this.gridOptions[key] = value;
             const event: PropertyChangedEvent = {
                 type: key,
                 currentValue: value,
@@ -1673,6 +1743,9 @@ export class GridOptionsWrapper {
         checkRenamedProperty('batchUpdateWaitMillis', 'asyncTransactionWaitMillis', '23.1.x');
         checkRenamedProperty('deltaRowDataMode', 'immutableData', '23.1.x');
 
+        checkRenamedProperty('serverSideFilteringAlwaysResets', 'serverSideFilterAllLevels', '28.0.0');
+        checkRenamedProperty('serverSideSortingAlwaysResets', 'serverSideSortAllLevels', '28.0.0');
+
         if (options.immutableColumns || options.deltaColumnMode) {
             console.warn(
                 'AG Grid: since v24.0, immutableColumns and deltaColumnMode properties are gone. The grid now works like this as default. To keep column order maintained, set grid property applyColumnDefOrder=true'
@@ -1816,6 +1889,16 @@ export class GridOptionsWrapper {
             console.warn('AG Grid: since v27.1, `clipboardDeliminator` has been replaced by `clipboardDelimiter`.');
             options.clipboardDelimiter = options.clipboardDeliminator;
         }
+
+        checkRenamedProperty('processSecondaryColDef', 'processPivotResultColDef', '28.0.x');
+        checkRenamedProperty('processSecondaryColGroupDef', 'processPivotResultColGroupDef', '28.0.x');
+
+        if (options.serverSideStoreType) {
+            console.warn('AG Grid: since v28.0, `serverSideStoreType` has been replaced by `serverSideInfiniteScroll`. Set to true to use Partial Store, and false to use Full Store.');
+            options.serverSideInfiniteScroll = options.serverSideStoreType === 'partial';
+        }
+
+        checkRenamedProperty('getServerSideStoreParams', 'getServerSideGroupLevelParams', '28.0.x');
     }
 
     private checkForViolations() {
@@ -1849,6 +1932,7 @@ export class GridOptionsWrapper {
 
     public getLocaleTextFunc(): (key: string, defaultValue: string, variableValues?: string[]) => string {
         const { localeText, getLocaleText, localeTextFunc } = this.gridOptions;
+
         if (getLocaleText) {
             //key: string, defaultValue: string, variableValues?: string[]
             return (key: string, defaultValue: string, variableValues?: string[]) => {
@@ -1859,9 +1943,9 @@ export class GridOptionsWrapper {
                     api: this.getApi()!,
                     columnApi: this.getColumnApi()!,
                     context: this.getContext()
-                }
+                };
                 return getLocaleText(params);
-            }
+            };
         }
 
         if (localeTextFunc) {
@@ -1870,7 +1954,6 @@ export class GridOptionsWrapper {
 
         return (key: string, defaultValue: string, variableValues?: string[]) => {
             let localisedText = localeText && localeText[key];
-
 
             if (localisedText && variableValues && variableValues.length) {
                 let found = 0;

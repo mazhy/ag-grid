@@ -28,6 +28,7 @@ import { Events } from "../eventKeys";
 import { FullWidthRowFocusedEvent } from "../events";
 import { GridApi } from "../gridApi";
 import { ColumnApi } from "../columns/columnApi";
+import { IRowModel } from "../interfaces/iRowModel";
 
 interface NavigateParams {
     /** The rowIndex to vertically scroll to. */
@@ -39,6 +40,7 @@ interface NavigateParams {
     /** For page up/down, we want to scroll to one row/column but focus another (ie. scrollRow could be stub). */
     focusIndex: number;
     focusColumn: Column;
+    isAsync?: boolean;
 }
 
 @Bean('navigationService')
@@ -52,6 +54,7 @@ export class NavigationService extends BeanStub {
     @Autowired('animationFrameService') private animationFrameService: AnimationFrameService;
     @Optional('rangeService') private rangeService: IRangeService;
     @Autowired('columnModel') private columnModel: ColumnModel;
+    @Autowired('rowModel') private rowModel: IRowModel;
     @Autowired('ctrlsService') public ctrlsService: CtrlsService;
     @Autowired('rowRenderer') public rowRenderer: RowRenderer;
     @Autowired('headerNavigationService') public headerNavigationService: HeaderNavigationService;
@@ -139,12 +142,20 @@ export class NavigationService extends BeanStub {
             this.gridBodyCon.getScrollFeature().ensureIndexVisible(scrollIndex, scrollType);
         }
 
+        // setFocusedCell relies on the browser default focus behavior to scroll the focused cell into view,
+        // however, this behavior will cause the cell border to be cut off, or if we have sticky rows, the
+        // cell will be completely hidden, so we call ensureIndexVisible without a position to guarantee
+        // minimal scroll to get the row into view.
+        if (!navigateParams.isAsync) {
+            this.gridBodyCon.getScrollFeature().ensureIndexVisible(focusIndex);
+        }
+
         // make sure the cell is rendered, needed if we are to focus
         this.animationFrameService.flushAllFrames();
 
         // if we don't do this, the range will be left on the last cell, which will leave the last focused cell
         // highlighted.
-        this.focusService.setFocusedCell(focusIndex, focusColumn, null, true);
+        this.focusService.setFocusedCell({ rowIndex: focusIndex, column: focusColumn, rowPinned: null, forceBrowserFocus: true });
 
         if (this.rangeService) {
             const cellPosition: CellPosition = { rowIndex: focusIndex, rowPinned: null, column: focusColumn };
@@ -254,7 +265,8 @@ export class NavigationService extends BeanStub {
                 scrollType: up ? 'bottom' : 'top',
                 scrollColumn: null,
                 focusIndex: focusIndex,
-                focusColumn: gridCell.column
+                focusColumn: gridCell.column,
+                isAsync: true
             });
         }, 50);
     }
@@ -614,6 +626,7 @@ export class NavigationService extends BeanStub {
     public getCellByPosition(cellPosition: CellPosition): CellCtrl | null {
         const rowCtrl = this.rowRenderer.getRowByPosition(cellPosition);
         if (!rowCtrl) { return null; }
+
         return rowCtrl.getCellCtrl(cellPosition.column);
     }
 
@@ -717,12 +730,13 @@ export class NavigationService extends BeanStub {
     private getNormalisedPosition(cellPosition: CellPosition): CellPosition | null {
         // ensureCellVisible first, to make sure cell at position is rendered.
         this.ensureCellVisible(cellPosition);
-        const cellComp = this.getCellByPosition(cellPosition);
+
+        const cellCtrl = this.getCellByPosition(cellPosition);
 
         // not guaranteed to have a cellComp when using the SSRM as blocks are loading.
-        if (!cellComp) { return null; }
+        if (!cellCtrl) { return null; }
 
-        cellPosition = cellComp.getCellPosition();
+        cellPosition = cellCtrl.getCellPosition();
         // we call this again, as nextCell can be different to it's previous value due to Column Spanning
         // (ie if cursor moving from right to left, and cell is spanning columns, then nextCell was the
         // last column in the group, however now it's the first column in the group). if we didn't do
@@ -768,7 +782,12 @@ export class NavigationService extends BeanStub {
     }
 
     private focusPosition(cellPosition: CellPosition) {
-        this.focusService.setFocusedCell(cellPosition.rowIndex, cellPosition.column, cellPosition.rowPinned, true);
+        this.focusService.setFocusedCell({
+            rowIndex: cellPosition.rowIndex,
+            column: cellPosition.column,
+            rowPinned: cellPosition.rowPinned,
+            forceBrowserFocus: true
+        });
 
         if (this.rangeService) {
             this.rangeService.setRangeToCell(cellPosition);
@@ -799,8 +818,13 @@ export class NavigationService extends BeanStub {
     }
 
     public ensureCellVisible(gridCell: CellPosition): void {
+        const isGroupStickyEnabled = this.gridOptionsWrapper.isGroupRowsSticky();
+        const rowNode = this.rowModel.getRow(gridCell.rowIndex);
+        // sticky rows are always visible, so the grid shouldn't scroll to focus them.
+        const skipScrollToRow = isGroupStickyEnabled && rowNode?.sticky;
+
         // this scrolls the row into view
-        if (missing(gridCell.rowPinned)) {
+        if (!skipScrollToRow && missing(gridCell.rowPinned)) {
             this.gridBodyCon.getScrollFeature().ensureIndexVisible(gridCell.rowIndex);
         }
 

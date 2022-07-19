@@ -23,14 +23,13 @@ import {
 } from "@ag-grid-community/core";
 import { ChartMenu } from "./menu/chartMenu";
 import { TitleEdit } from "./chartTitle/titleEdit";
-import { ChartController } from "./chartController";
+import { ChartController, ChartModelUpdatedEvent } from "./chartController";
 import { ChartDataModel, ChartModelParams } from "./chartDataModel";
 import { BarChartProxy } from "./chartProxies/cartesian/barChartProxy";
 import { AreaChartProxy } from "./chartProxies/cartesian/areaChartProxy";
-import { ChartProxy, ChartProxyParams, UpdateChartParams } from "./chartProxies/chartProxy";
+import { ChartProxy, ChartProxyParams } from "./chartProxies/chartProxy";
 import { LineChartProxy } from "./chartProxies/cartesian/lineChartProxy";
 import { PieChartProxy } from "./chartProxies/polar/pieChartProxy";
-import { DoughnutChartProxy } from "./chartProxies/polar/doughnutChartProxy";
 import { ScatterChartProxy } from "./chartProxies/cartesian/scatterChartProxy";
 import { HistogramChartProxy } from "./chartProxies/cartesian/histogramChartProxy";
 import { ChartTranslationService } from "./services/chartTranslationService";
@@ -55,6 +54,7 @@ export interface GridChartParams {
     chartOptionsToRestore?: AgChartThemeOverrides;
     chartPaletteToRestore?: AgChartThemePalette;
     seriesChartTypes?: SeriesChartType[];
+    crossFilteringResetCallback?: () => void;
 }
 
 export class GridChartComp extends Component {
@@ -182,6 +182,9 @@ export class GridChartComp extends Component {
         const crossFilterCallback = (event: any, reset: boolean) => {
             const ctx = this.params.crossFilteringContext;
             ctx.lastSelectedChartId = reset ? '' : this.chartController.getChartId();
+            if (reset) {
+                this.params.crossFilteringResetCallback!();
+            }
             this.crossFilterService.filter(event, reset);
         }
 
@@ -199,7 +202,7 @@ export class GridChartComp extends Component {
             grouping: this.chartController.isGrouping(),
             chartOptionsToRestore: this.params.chartOptionsToRestore,
             chartPaletteToRestore: this.params.chartPaletteToRestore,
-            seriesChartTypes: this.chartController.getSeriesChartTypes()
+            seriesChartTypes: this.chartController.getSeriesChartTypes(),
         };
 
         // ensure 'restoring' options are not reused when switching chart types
@@ -249,9 +252,8 @@ export class GridChartComp extends Component {
             case 'normalizedBar':
                 return new BarChartProxy(chartProxyParams);
             case 'pie':
-                return new PieChartProxy(chartProxyParams);
             case 'doughnut':
-                return new DoughnutChartProxy(chartProxyParams);
+                return new PieChartProxy(chartProxyParams);
             case 'area':
             case 'stackedArea':
             case 'normalizedArea':
@@ -368,29 +370,9 @@ export class GridChartComp extends Component {
             return;
         }
 
-        const selectedDimension = this.chartController.getSelectedDimension();
-
-        const chartUpdateParams: UpdateChartParams = {
-            data,
-            grouping: this.chartController.isGrouping(),
-            category: {
-                id: selectedDimension.colId,
-                name: selectedDimension.displayName!,
-                chartDataType: this.getChartDataType(selectedDimension.colId)
-            },
-            fields,
-            chartId: this.chartController.getChartId(),
-            getCrossFilteringContext: () => this.params.crossFilteringContext,
-            seriesChartTypes: this.chartController.getSeriesChartTypes()
-        };
-
+        let chartUpdateParams = this.chartController.getChartUpdateParams();
         chartProxy.update(chartUpdateParams);
         this.titleEdit.refreshTitle(this.chartController, this.chartOptionsService);
-    }
-
-    private getChartDataType(colId: string): string | undefined {
-        const column = this.columnModel.getPrimaryColumn(colId);
-        return column ? column.getColDef().chartDataType : undefined;
     }
 
     private handleEmptyChart(data: any[], fields: any[]): boolean {
@@ -434,19 +416,8 @@ export class GridChartComp extends Component {
         return this.chartProxy.getChart();
     }
 
-    public refreshCanvasSize(): void {
-        if (!this.params.insideDialog) {
-            return;
-        }
-
-        const { eChart } = this;
-        if (this.chartMenu.isVisible()) {
-            // we don't want the menu showing to affect the chart options
-            const chart = this.chartProxy.getChart();
-
-            chart.height = _.getInnerHeight(eChart);
-            chart.width = _.getInnerWidth(eChart);
-        }
+    public crossFilteringReset(): void {
+        this.chartProxy.crossFilteringReset();
     }
 
     private setActiveChartCellRange(focusEvent: FocusEvent): void {

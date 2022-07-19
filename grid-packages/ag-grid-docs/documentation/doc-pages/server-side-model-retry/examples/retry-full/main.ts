@@ -1,6 +1,6 @@
 import { Grid, GridOptions, IServerSideDatasource } from '@ag-grid-community/core'
 declare var FakeServer: any;
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   columnDefs: [
     {
       // demonstrating the use of valueGetters
@@ -29,7 +29,6 @@ const gridOptions: GridOptions = {
 
   // use the server-side row model
   rowModelType: 'serverSide',
-  serverSideStoreType: 'full',
   maxConcurrentDatasourceRequests: 1,
 
   suppressAggFuncInHeader: true,
@@ -67,7 +66,7 @@ function onBtRetry() {
 }
 
 function onBtReset() {
-  gridOptions.api!.refreshServerSideStore({ purge: true })
+  gridOptions.api!.refreshServerSide({ purge: true })
 }
 
 // setup the grid after the page has finished loading

@@ -1,21 +1,11 @@
-import {
-    AgCartesianAxisOptions,
-    AgCartesianChartOptions,
-    AgChart,
-    CartesianChart,
-    ChartAxisPosition
-} from "ag-charts-community";
-import { _, ChartType, SeriesChartType } from "@ag-grid-community/core";
+import { AgCartesianAxisOptions, ChartAxisPosition } from "ag-charts-community";
+import { ChartType, SeriesChartType } from "@ag-grid-community/core";
 import { ChartProxyParams, FieldDefinition, UpdateChartParams } from "../chartProxy";
 import { CartesianChartProxy } from "../cartesian/cartesianChartProxy";
 import { deepMerge } from "../../utils/object";
 import { getSeriesType } from "../../utils/seriesTypeMapper";
 
 export class ComboChartProxy extends CartesianChartProxy {
-
-    private prevFields: string;
-    private prevCategoryId: string;
-    private prevSeriesChartTypes: SeriesChartType[];
 
     public constructor(params: ChartProxyParams) {
         super(params);
@@ -26,76 +16,17 @@ export class ComboChartProxy extends CartesianChartProxy {
         this.recreateChart();
     }
 
-    protected createChart(): CartesianChart {
-        return AgChart.create({
-            container: this.chartProxyParams.parentElement,
-            theme: this.chartTheme,
-        }) as CartesianChart;
+    public getData(params: UpdateChartParams): any[] {
+        return this.getDataTransformedData(params);
     }
 
-    public update(params: UpdateChartParams): void {
-        const { category, data } = params;
+    public getAxes(params: UpdateChartParams): AgCartesianAxisOptions[] {
+        this.xAxisType = params.grouping ? 'groupedCategory' : 'category';
 
-        let options: AgCartesianChartOptions = {
-            data: this.transformData(data, category.id)
-        };
-
-        if (this.seriesChanged(params)) {
-            options.series = this.getSeriesOptions(params);
-            options.axes = this.getAxes(params);
-        }
-
-        AgChart.update(this.chart as CartesianChart, options);
-    }
-
-    private seriesChanged(params: UpdateChartParams): boolean {
-        const { seriesChartTypes } = params;
-        const seriesChartTypesChanged = !_.areEqual(this.prevSeriesChartTypes, seriesChartTypes,
-            (s1, s2) => s1.colId === s2.colId && s1.chartType === s2.chartType && s1.secondaryAxis === s2.secondaryAxis);
-
-        // cache a cloned copy of `seriesChartTypes` for subsequent comparisons
-        this.prevSeriesChartTypes = seriesChartTypes.map(s => ({...s}));
-
-        // check if any fields have changed
-        const fields = params.fields.map(f => f.colId).join();
-        const fieldsChanged = this.prevFields !== fields;
-        this.prevFields = fields;
-
-        // check if the category has changed
-        const categoryId = params.category.id;
-        const categoryChanged = this.prevCategoryId !== categoryId;
-        this.prevCategoryId = categoryId;
-
-        return seriesChartTypesChanged || fieldsChanged || categoryChanged;
-    }
-
-    private getSeriesOptions(params: UpdateChartParams): any {
-        const { fields, category, seriesChartTypes } = params;
-
-        return fields.map(field => {
-            const seriesChartType = seriesChartTypes.find(s => s.colId === field.colId);
-            if (seriesChartType) {
-                const chartType: ChartType = seriesChartType.chartType;
-                return {
-                    ...this.extractSeriesOverrides(seriesChartType),
-                    type: getSeriesType(chartType),
-                    xKey: category.id,
-                    yKey: field.colId,
-                    yName: field.displayName,
-                    grouped: ['groupedColumn', 'groupedBar', 'groupedArea'].includes(chartType),
-                    stacked: ['stackedArea', 'stackedColumn'].includes(chartType),
-                }
-            }
-        });
-    }
-
-    private getAxes(updateParams: UpdateChartParams): AgCartesianAxisOptions[] {
-        this.xAxisType = updateParams.grouping ? 'groupedCategory' : 'category';
-
-        const fields = updateParams ? updateParams.fields : [];
+        const fields = params ? params.fields : [];
         const fieldsMap = new Map(fields.map(f => [f.colId, f]));
 
-        const { primaryYKeys, secondaryYKeys } = this.getYKeys(fields, updateParams.seriesChartTypes);
+        const { primaryYKeys, secondaryYKeys } = this.getYKeys(fields, params.seriesChartTypes);
         const { bottomOptions, leftOptions, rightOptions } = this.getAxisOptions();
 
         const axes = [
@@ -166,6 +97,26 @@ export class ComboChartProxy extends CartesianChartProxy {
         return axes;
     }
 
+    public getSeries(params: UpdateChartParams): any {
+        const { fields, category, seriesChartTypes } = params;
+
+        return fields.map(field => {
+            const seriesChartType = seriesChartTypes.find(s => s.colId === field.colId);
+            if (seriesChartType) {
+                const chartType: ChartType = seriesChartType.chartType;
+                return {
+                    ...this.extractSeriesOverrides(getSeriesType(seriesChartType.chartType)),
+                    type: getSeriesType(chartType),
+                    xKey: category.id,
+                    yKey: field.colId,
+                    yName: field.displayName,
+                    grouped: ['groupedColumn', 'groupedBar', 'groupedArea'].includes(chartType),
+                    stacked: ['stackedArea', 'stackedColumn'].includes(chartType),
+                }
+            }
+        });
+    }
+
     private getAxisOptions() {
         const axisOptions = this.getAxesOptions('cartesian');
         return {
@@ -189,15 +140,4 @@ export class ComboChartProxy extends CartesianChartProxy {
 
         return { primaryYKeys, secondaryYKeys };
     }
-
-    private extractSeriesOverrides(seriesChartType: SeriesChartType) {
-        const seriesOverrides = this.chartOptions[getSeriesType(seriesChartType.chartType)].series;
-
-        // TODO: remove once `yKeys` and `yNames` have been removed from the options
-        delete seriesOverrides.yKeys;
-        delete seriesOverrides.yNames;
-
-        return seriesOverrides;
-    }
-
 }

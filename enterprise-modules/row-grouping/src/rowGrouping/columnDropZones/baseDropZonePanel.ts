@@ -1,6 +1,8 @@
 import {
     Autowired,
     Column,
+    ColumnEventType,
+    ColumnModel,
     Component,
     Context,
     DragAndDropService,
@@ -36,7 +38,11 @@ export interface BaseDropZonePanelBeans {
     dragAndDropService: DragAndDropService;
 }
 
+export type TDropZone = 'rowGroup' | 'pivot' | 'aggregation';
+
 export abstract class BaseDropZonePanel extends Component {
+
+    @Autowired('columnModel') private colModel: ColumnModel;
 
     private static STATE_NOT_DRAGGING = 'notDragging';
     private static STATE_NEW_COLUMNS_IN = 'newColumnsIn';
@@ -75,7 +81,7 @@ export abstract class BaseDropZonePanel extends Component {
 
     @Autowired('focusService') private readonly focusService: FocusService;
 
-    constructor(private horizontal: boolean, private valueColumn: boolean) {
+    constructor(private horizontal: boolean, private dropZonePurpose: TDropZone) {
         super(/* html */ `<div class="ag-unselectable" role="presentation"></div>`);
         this.addElementClasses(this.getGui());
         this.eColumnDropList = document.createElement('div');
@@ -277,14 +283,33 @@ export abstract class BaseDropZonePanel extends Component {
         const goodDragColumns = dragColumns.filter(this.isColumnDroppable.bind(this));
 
         if (goodDragColumns.length > 0) {
+            const hideColumnOnExit = this.isRowGroupPanel() && !this.gridOptionsWrapper.isSuppressRowGroupHidesColumns() && !draggingEvent.fromNudge;
+
+            if (hideColumnOnExit) {
+                const dragItem = draggingEvent.dragSource.getDragItem();
+                const columns = dragItem.columns;
+                this.setColumnsVisible(columns, false, "uiColumnDragged");
+            }
+
             this.potentialDndColumns = goodDragColumns;
             this.checkInsertIndex(draggingEvent);
             this.refreshGui();
         }
     }
 
+    public setColumnsVisible(columns: Column[] | null | undefined, visible: boolean, source: ColumnEventType = "api") {
+        if (columns) {
+            const allowedCols = columns.filter(c => !c.getColDef().lockVisible);
+            this.colModel.setColumnsVisible(allowedCols, visible, source);
+        }
+    }
+
     protected isPotentialDndColumns(): boolean {
         return _.existsAndNotEmpty(this.potentialDndColumns);
+    }
+
+    private isRowGroupPanel() {
+        return this.dropZonePurpose === 'rowGroup';
     }
 
     private onDragLeave(draggingEvent: DraggingEvent): void {
@@ -297,6 +322,17 @@ export abstract class BaseDropZonePanel extends Component {
         }
 
         if (this.isPotentialDndColumns()) {
+            const hideColumnOnExit = this.isRowGroupPanel() && !this.gridOptionsWrapper.isSuppressMakeColumnVisibleAfterUnGroup() && !draggingEvent.fromNudge;
+
+            if (hideColumnOnExit) {
+                const dragItem = draggingEvent.dragSource.getDragItem();
+                const hiddenCols = this.potentialDndColumns.filter(col => dragItem.visibleState?.[col.getId()!] ?? false);
+                const visibleCols = this.potentialDndColumns.filter(col => !(dragItem.visibleState?.[col.getId()!] ?? false));
+                
+                this.setColumnsVisible(hiddenCols, false, "uiColumnDragged");
+                this.setColumnsVisible(visibleCols, true, "uiColumnDragged");
+            }
+
             this.potentialDndColumns = [];
             this.refreshGui();
         }
@@ -480,7 +516,7 @@ export abstract class BaseDropZonePanel extends Component {
     }
 
     private createColumnComponent(column: Column, ghost: boolean): DropZoneColumnComp {
-        const columnComponent = new DropZoneColumnComp(column, this.dropTarget, ghost, this.valueColumn, this.horizontal);
+        const columnComponent = new DropZoneColumnComp(column, this.dropTarget, ghost, this.dropZonePurpose, this.horizontal);
         columnComponent.addEventListener(DropZoneColumnComp.EVENT_COLUMN_REMOVE, this.removeColumns.bind(this, [column]));
 
         this.beans.context.createBean(columnComponent);

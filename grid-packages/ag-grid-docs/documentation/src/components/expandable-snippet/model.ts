@@ -150,7 +150,8 @@ export function buildModel(
             .split(',')
             .map((p) => p.trim());
         typeParams.forEach((tp, idx) => {
-            genericArgs[tp] = genericParams[idx];
+            const [tpName] = tp.split('=').map(v => v.trim());
+            genericArgs[tpName] = genericParams[idx];
         });
     }
 
@@ -498,20 +499,26 @@ function typeWrapping(type: string): Wrapping {
     return "none";
 }
 
-export function loadLookups(lookupRoot: string, overridesrc?: string): { interfaceLookup; codeLookup } {
+export function loadLookups(lookupRoot: string, jsonData: {}, overridesrc?: string): { interfaceLookup; codeLookup } {
+    const nodes = jsonData ? null : useJsonFileNodes();
     const interfaceLookup: InterfaceLookup = getJsonFromFile(
-        useJsonFileNodes(),
+        jsonData,
+        nodes,
         undefined,
         `${lookupRoot}/interfaces.AUTO.json`
     );
     const codeLookup: CodeLookup = getJsonFromFile(
-        useJsonFileNodes(),
+        jsonData,
+        nodes,
         undefined,
         `${lookupRoot}/doc-interfaces.AUTO.json`
     );
 
     if (overridesrc) {
-        const overrides: Overrides = getJsonFromFile(useJsonFileNodes(), undefined, overridesrc);
+        const overrides: Overrides = getJsonFromFile(jsonData,
+            nodes,
+            undefined,
+            overridesrc);
 
         Object.entries(overrides)
             .filter(([type]) => type !== '_config_')

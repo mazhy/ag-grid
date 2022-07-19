@@ -1,6 +1,6 @@
 import { Grid, ColDef, ColGroupDef, ColumnApi, GridOptions, IServerSideDatasource, IServerSideGetRowsRequest } from '@ag-grid-community/core'
 declare var FakeServer: any;
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   columnDefs: [
     { field: 'country', rowGroup: true },
     { field: 'sport', rowGroup: true },
@@ -20,7 +20,7 @@ const gridOptions: GridOptions = {
 
   // use the server-side row model
   rowModelType: 'serverSide',
-  serverSideStoreType: 'partial',
+  serverSideInfiniteScroll: true,
 
   // enable pivoting
   pivotMode: true,
@@ -75,7 +75,7 @@ function getServerSideDatasource(server: any): IServerSideDatasource {
 
 function addPivotColDefs(request: IServerSideGetRowsRequest, response: any, columnApi: ColumnApi) {
   // check if pivot colDefs already exist
-  var existingPivotColDefs = columnApi.getSecondaryColumns()
+  var existingPivotColDefs = columnApi.getPivotResultColumns()
   if (existingPivotColDefs && existingPivotColDefs.length > 0) {
     return
   }
@@ -83,8 +83,8 @@ function addPivotColDefs(request: IServerSideGetRowsRequest, response: any, colu
   // create pivot colDef's based of data returned from the server
   var pivotColDefs = createPivotColDefs(request, response.pivotFields)
 
-  // supply secondary columns to the grid
-  columnApi.setSecondaryColumns(pivotColDefs)
+  // supply pivot result columns to the grid
+  columnApi.setPivotResultColumns(pivotColDefs)
 }
 
 function createPivotColDefs(request: IServerSideGetRowsRequest, pivotFields: string[]) {
@@ -123,11 +123,11 @@ function createPivotColDefs(request: IServerSideGetRowsRequest, pivotFields: str
   }
 
   if (request.pivotMode && request.pivotCols.length > 0) {
-    var secondaryCols: ColGroupDef[] = []
+    var pivotResultCols: ColGroupDef[] = []
     pivotFields.forEach(function (field) {
-      addColDef(field, field.split('_'), secondaryCols)
+      addColDef(field, field.split('_'), pivotResultCols)
     })
-    return secondaryCols
+    return pivotResultCols
   }
 
   return []

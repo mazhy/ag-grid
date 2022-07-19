@@ -1,8 +1,12 @@
 import { convertTemplate, getImport, toMemberWithValue, toConst, toInput, toOutput } from './angular-utils';
 import { templatePlaceholder } from "./grid-vanilla-src-parser";
-import { addBindingImports, getPropertyInterfaces, ImportType, isInstanceMethod, removeFunctionKeyword } from './parser-utils';
+import { addBindingImports, addGenericInterfaceImport, getPropertyInterfaces, handleRowGenericInterface, ImportType, isInstanceMethod, removeFunctionKeyword } from './parser-utils';
+const path = require('path');
 
-function getOnGridReadyCode(readyCode: string, resizeToFit: boolean, data: { url: string, callback: string; }, hasApi: boolean, hasColApi: boolean): string {
+function getOnGridReadyCode(readyCode: string, resizeToFit: boolean,
+    data: { url: string, callback: string; },
+    rowDataType: string | undefined,
+    hasApi: boolean, hasColApi: boolean): string {
     const additionalLines = [];
 
     if (readyCode) {
@@ -18,32 +22,36 @@ function getOnGridReadyCode(readyCode: string, resizeToFit: boolean, data: { url
 
         if (callback.indexOf('api!.setRowData') !== -1) {
             const setRowDataBlock = callback.replace('params.api!.setRowData(data)', 'this.rowData = data');
-            additionalLines.push(`this.http.get<any[]>(${url}).subscribe(data => ${setRowDataBlock});`);
+            additionalLines.push(`this.http.get<${rowDataType}[]>(${url}).subscribe(data => ${setRowDataBlock});`);
         } else {
-            additionalLines.push(`this.http.get<any[]>(${url}).subscribe(data => ${callback});`);
+            additionalLines.push(`this.http.get<${rowDataType}[]>(${url}).subscribe(data => ${callback});`);
         }
     }
-
-    return `
-    onGridReady(params: GridReadyEvent) {
-        ${hasApi ? 'this.gridApi = params.api;' : ''}${hasColApi ? 'this.gridColumnApi = params.columnApi;' : ''}${additionalLines.length > 0 ? `\n\n        ${additionalLines.join('\n        ')}` : ''}
-    }`;
+    const gridReadyEventParam = rowDataType !== 'any' ? `<${rowDataType}>` : ''
+    if (hasApi || hasColApi || additionalLines.length > 0) {
+        return `
+        onGridReady(params: GridReadyEvent${gridReadyEventParam}) {
+            ${hasApi ? 'this.gridApi = params.api;' : ''}${hasColApi ? 'this.gridColumnApi = params.columnApi;' : ''}${additionalLines.length > 0 ? `\n\n        ${additionalLines.join('\n        ')}` : ''}
+        }`;
+    } else {
+        return '';
+    }
 }
 
-function getModuleImports(bindings: any, componentFileNames: string[]): string[] {
+function addModuleImports(imports: string[], bindings: any, allStylesheets: string[]): string[] {
     const { gridSettings, imports: bindingImports, properties } = bindings;
 
-    const imports = ["import { Component } from '@angular/core';"];
+    imports.push("import '@ag-grid-community/styles/ag-grid.css';");
 
-    if (bindings.data) {
-        imports.push("import { HttpClient } from '@angular/common/http';");
+    // to account for the (rare) example that has more than one class...just default to alpine if it does
+    // we strip off any '-dark' from the theme when loading the CSS as dark versions are now embedded in the
+    // "source" non dark version
+    const theme = gridSettings.theme ? gridSettings.theme.replace('-dark', '') : 'ag-theme-alpine';
+    imports.push(`import "@ag-grid-community/styles/${theme}.css";`);
+
+    if(allStylesheets && allStylesheets.length > 0) {
+        allStylesheets.forEach(styleSheet => imports.push(`import '../${path.basename(styleSheet)}';`));
     }
-
-    imports.push("import '@ag-grid-community/core/dist/styles/ag-grid.css';");
-
-    // to account for the (rare) example that has more than one class...just default to balham if it does
-    const theme = gridSettings.theme || 'ag-theme-alpine';
-    imports.push(`import "@ag-grid-community/core/dist/styles/${theme}.css";`);
 
     let propertyInterfaces = getPropertyInterfaces(properties);
     const bImports = [...(bindingImports || [])];
@@ -57,32 +65,29 @@ function getModuleImports(bindings: any, componentFileNames: string[]): string[]
         addBindingImports(bImports, imports, false, true);
     }
 
-    if (componentFileNames) {
-        imports.push(...componentFileNames.map(getImport));
-    }
-
     imports.push('// Required feature modules are registered in app.module.ts')
 
     return imports;
 }
 
-function getPackageImports(bindings: any, componentFileNames: string[]): string[] {
+function addPackageImports(imports: string[], bindings: any, allStylesheets: string[]): string[] {
     const { gridSettings, imports: bindingImports, properties } = bindings;
-    const imports = ["import { Component } from '@angular/core';"];
-
-    if (bindings.data) {
-        imports.push("import { HttpClient } from '@angular/common/http';");
-    }
 
     if (gridSettings.enterprise) {
         imports.push("import 'ag-grid-enterprise';");
     }
 
-    imports.push("import 'ag-grid-community/dist/styles/ag-grid.css';");
+    imports.push("import 'ag-grid-community/styles/ag-grid.css';");
 
     // to account for the (rare) example that has more than one class...just default to alpine if it does
-    const theme = gridSettings.theme || 'ag-theme-alpine';
-    imports.push(`import "ag-grid-community/dist/styles/${theme}.css";`);
+    // we strip off any '-dark' from the theme when loading the CSS as dark versions are now embedded in the
+    // "source" non dark version
+    const theme = gridSettings.theme ? gridSettings.theme.replace('-dark', '') : 'ag-theme-alpine';
+    imports.push(`import "ag-grid-community/styles/${theme}.css";`);
+
+    if(allStylesheets && allStylesheets.length > 0) {
+        allStylesheets.forEach(styleSheet => imports.push(`import '../${path.basename(styleSheet)}';`));
+    }
 
     let propertyInterfaces = getPropertyInterfaces(properties);
     const bImports = [...(bindingImports || [])];
@@ -96,19 +101,30 @@ function getPackageImports(bindings: any, componentFileNames: string[]): string[
         addBindingImports(bImports, imports, true, true);
     }
 
+    return imports;
+}
+
+function getImports(bindings: any, componentFileNames: string[], importType: ImportType, allStylesheets: string[]): string[] {
+
+    let imports = ["import { Component } from '@angular/core';"];
+
+    if (bindings.data) {
+        imports.push("import { HttpClient } from '@angular/common/http';");
+    }
+
+    if (importType === "packages") {
+        addPackageImports(imports, bindings, allStylesheets);
+    } else {
+        addModuleImports(imports, bindings, allStylesheets);
+    }
+
     if (componentFileNames) {
         imports.push(...componentFileNames.map(getImport));
     }
 
-    return imports;
-}
+    addGenericInterfaceImport(imports, bindings.tData, bindings);
 
-function getImports(bindings: any, componentFileNames: string[], importType: ImportType): string[] {
-    if (importType === "packages") {
-        return getPackageImports(bindings, componentFileNames);
-    } else {
-        return getModuleImports(bindings, componentFileNames);
-    }
+    return imports;
 }
 
 function getTemplate(bindings: any, attributes: string[]): string {
@@ -127,8 +143,9 @@ function getTemplate(bindings: any, attributes: string[]): string {
     return convertTemplate(template);
 }
 
-export function vanillaToAngular(bindings: any, componentFileNames: string[]): (importType: ImportType) => string {
-    const { data, properties, typeDeclares, interfaces } = bindings;
+export function vanillaToAngular(bindings: any, componentFileNames: string[], allStylesheets: string[]): (importType: ImportType) => string {
+    const { data, properties, typeDeclares, interfaces, tData } = bindings;
+    const rowDataType = tData || 'any';
     const diParams = [];
 
     if (data) {
@@ -136,16 +153,14 @@ export function vanillaToAngular(bindings: any, componentFileNames: string[]): (
     }
 
     const instanceMethods = bindings.instanceMethods.map(removeFunctionKeyword);
-    const eventAttributes = bindings.eventHandlers
-        .filter(event => event.name !== 'onGridReady')
-        .map(toOutput)
-        .concat('(gridReady)="onGridReady($event)"');
+
 
     const eventHandlers = bindings.eventHandlers.map(event => event.handler).map(removeFunctionKeyword);
     const externalEventHandlers = bindings.externalEventHandlers.map(handler => removeFunctionKeyword(handler.body));
+    const genericParams = rowDataType !== 'any' ? `<${rowDataType}>` : ''
 
     return importType => {
-        const imports = getImports(bindings, componentFileNames, importType);
+        const imports = getImports(bindings, componentFileNames, importType, allStylesheets);
         const propertyAttributes = [];
         const propertyVars = [];
         const propertyAssignments = [];
@@ -172,10 +187,9 @@ export function vanillaToAngular(bindings: any, componentFileNames: string[]): (
         }
 
         if (!propertyAssignments.find(item => item.indexOf('rowData') >= 0)) {
-            propertyAssignments.push('public rowData!: any[];');
-        }
 
-        const template = getTemplate(bindings, propertyAttributes.concat(eventAttributes));
+            propertyAssignments.push(`public rowData!: ${rowDataType}[];`);
+        }
 
         const componentForCheckBody = eventHandlers
             .concat(externalEventHandlers)
@@ -185,8 +199,20 @@ export function vanillaToAngular(bindings: any, componentFileNames: string[]): (
 
         const hasGridApi = componentForCheckBody.includes('gridApi');
         const hasGridColumnApi = componentForCheckBody.includes('gridColumnApi');
+        const gridReadyCode = getOnGridReadyCode(bindings.onGridReady, bindings.resizeToFit, data, rowDataType, hasGridApi, hasGridColumnApi);
+        const additional = [];
 
-        const additional = [getOnGridReadyCode(bindings.onGridReady, bindings.resizeToFit, data, hasGridApi, hasGridColumnApi)];
+        if (gridReadyCode) {
+            additional.push(gridReadyCode)
+        }
+
+        const eventAttributes = bindings.eventHandlers
+            .filter(event => event.name !== 'onGridReady')
+            .map(toOutput)
+            .concat(gridReadyCode ? '(gridReady)="onGridReady($event)"' : '');
+
+        const template = getTemplate(bindings, propertyAttributes.concat(eventAttributes));
+
         const componentBody = eventHandlers
             .concat(externalEventHandlers)
             .concat(additional)
@@ -197,7 +223,7 @@ export function vanillaToAngular(bindings: any, componentFileNames: string[]): (
             .replace(/gridApi!\./g, 'gridApi.')
             .replace(/gridColumnApi!\./g, 'gridColumnApi.');
 
-        return `
+        let generatedOutput = `
 ${imports.join('\n')}${typeDeclares?.length > 0 ? '\n' + typeDeclares.join('\n') : ''}${interfaces?.length > 0 ? '\n' + interfaces.join('\n') : ''}
 
 @Component({
@@ -206,7 +232,7 @@ ${imports.join('\n')}${typeDeclares?.length > 0 ? '\n' + typeDeclares.join('\n')
 })
 
 export class AppComponent {
-${hasGridApi ? '    private gridApi!: GridApi;\n' : ''}${hasGridColumnApi ? '    private gridColumnApi!: ColumnApi;\n' : ''}
+${hasGridApi ? `    private gridApi!: GridApi${genericParams};\n` : ''}${hasGridColumnApi ? '    private gridColumnApi!: ColumnApi;\n' : ''}
     ${propertyVars.join('\n')}
     ${propertyAssignments.join(';\n')}
 
@@ -222,6 +248,11 @@ ${bindings.classes.join('\n')}
 
 ${bindings.utils.join('\n')}
 `;
+
+        // Until we support this cleanly.
+        generatedOutput = handleRowGenericInterface(generatedOutput, tData);
+
+        return generatedOutput;
     };
 }
 

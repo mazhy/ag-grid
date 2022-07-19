@@ -129,10 +129,10 @@
 |    <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
 |    <!-- Include the core CSS, this is needed by the grid -->
 |    <link rel="stylesheet"
-|      href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css"/>
+|      href="https://unpkg.com/ag-grid-community/styles/ag-grid.css"/>
 |    <!-- Include the theme CSS, only need to import the theme you are going to use -->
 |    <link rel="stylesheet"
-|      href="https://unpkg.com/ag-grid-community/dist/styles/ag-theme-alpine.css"/>
+|      href="https://unpkg.com/ag-grid-community/styles/ag-theme-alpine.css"/>
 |  </head>
 |  <body>
 |    <!-- Button to demonstrate calling the grid's API. -->
@@ -203,10 +203,10 @@
 |    <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
 |    <!-- Include the core CSS, this is needed by the grid -->
 |    <link rel="stylesheet"
-|      href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css"/>
+|      href="https://unpkg.com/ag-grid-community/styles/ag-grid.css"/>
 |    <!-- Include the theme CSS, only need to import the theme you are going to use -->
 |    <link rel="stylesheet"
-|      href="https://unpkg.com/ag-grid-community/dist/styles/ag-theme-alpine.css"/>
+|      href="https://unpkg.com/ag-grid-community/styles/ag-theme-alpine.css"/>
 |```
 |
 |OR
@@ -217,7 +217,7 @@
 |    <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
 |```
 |
-| You can select from any of the [Grid Provided Themes](/themes-provided/). If you don't like the provided themes you can [Customise the Provided Theme](/themes-customising/) or do not use a Theme and style the grid yourself from scratch.
+| You can select from any of the [Grid Provided Themes](/themes/). If you don't like the provided themes you can [Customise the Provided Theme](/themes/) or do not use a Theme and style the grid yourself from scratch.
 |
 | The dimension of the Grid is also set on the parent DIV via `style="height: 500px"`.
 |

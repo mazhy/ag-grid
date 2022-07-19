@@ -108,7 +108,6 @@ const gridOptions: GridOptions = {
   asyncTransactionWaitMillis: 500,
   purgeClosedRowNodes: true,
   rowSelection: 'multiple',
-  serverSideStoreType: 'full',
   columnDefs: columnDefs,
   rowModelType: 'serverSide',
   animateRows: true,
@@ -132,7 +131,7 @@ const gridOptions: GridOptions = {
           function (result: any[], serverVersion: string) {
             params2.success({
               rowData: result,
-              storeInfo: { serverVersion: serverVersion },
+              groupLevelInfo: { serverVersion: serverVersion },
             })
           }
         )
@@ -162,7 +161,7 @@ function getRowId(params: any) {
 
 function isApplyServerSideTransaction(params: IsApplyServerSideTransactionParams) {
   var transactionVersion = (params.transaction as any).serverVersion
-  var dataLoadedVersion = params.storeInfo.serverVersion
+  var dataLoadedVersion = params.groupLevelInfo.serverVersion
   var transactionCreatedSinceInitialLoad =
     transactionVersion > dataLoadedVersion
   if (!transactionCreatedSinceInitialLoad) {

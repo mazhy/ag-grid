@@ -42,8 +42,6 @@
 |
 | ```jsx
 | <ag-grid-vue
-|     #myGrid // assign an angular ID to the grid - optional
-|
 |     // provide gridReady callback to the grid
 |     @grid-ready="onGridReady"
 |     // ...
@@ -56,16 +54,16 @@
 | }
 | ```
 |
-| The APIs are accessible through the component. For example, above the ID is given as `'#myGrid'` which then allows the API to be accessed like this:
+| The APIs are then accessible through the component:
 |
 | ```html
-| <button @click="myGrid.api.deselectAll()">Clear Selection</button>
+| <button @click="this.api.deselectAll()">Clear Selection</button>
 | ```
 |
 | ## Grid Options
 |
 | The `gridOptions` object is a 'one stop shop' for the entire interface into the grid, commonly used if using plain JavaScript.
-| Grid options can however be used instead of, or in addition to, normal framework binding.
+| Grid options can however be used instead of, or in addition to, normal framework binding. If an option is set via `gridOptions`, as well as directly on the component, then the component value will take precedence.
 |
 | The example below shows the different types of items available on `gridOptions`.
 |

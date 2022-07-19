@@ -1,7 +1,7 @@
 import { Grid, GridOptions, IServerSideDatasource, IServerSideGetRowsParams } from '@ag-grid-community/core'
 declare var FakeServer: any;
 
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   columnDefs: [
     {
       field: 'year',
@@ -28,7 +28,6 @@ const gridOptions: GridOptions = {
   },
   maxConcurrentDatasourceRequests: 1,
   rowModelType: 'serverSide',
-  serverSideStoreType: 'full',
   suppressAggFuncInHeader: true,
   animateRows: true,
 }
@@ -63,7 +62,7 @@ function getServerSideDatasource(server: any): IServerSideDatasource {
           params.success({
             rowData: response.rows,
             rowCount: response.lastRow,
-            storeInfo: {
+            groupLevelInfo: {
               lastLoadedTime: new Date().toLocaleString(),
               randomValue: Math.random(),
             },

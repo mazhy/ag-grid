@@ -4,19 +4,19 @@ import { RowNode } from "../../entities/rowNode";
 import { AgGridCommon } from "../../interfaces/iCommon";
 import { IComponent } from "../../interfaces/iComponent";
 
-export interface ICellRendererParams extends AgGridCommon {
+export interface ICellRendererParams<TData = any, TValue = any> extends AgGridCommon<TData> {
     /** Value to be rendered. */
-    value: any;
+    value: TValue;
     /** Formatted value to be rendered. */
-    valueFormatted: any;
+    valueFormatted: string | null | undefined;
     /** True if this is a full width row. */
     fullWidth?: boolean;
     /** Pinned state of the cell. */
-    pinned?: string | null;
-    /** The row's data. */
-    data: any;
+    pinned?: "left" | "right" | null;
+    /** The row's data. Data property can be `undefined` when row grouping or loading infinite row models. */
+    data: TData | undefined;
     /** The row node. */
-    node: RowNode;
+    node: RowNode<TData>;
     /** The current index of the row (this changes after filter and sort). */
     rowIndex: number;
     /** The cell's column definition. */
@@ -45,9 +45,9 @@ export interface ICellRendererParams extends AgGridCommon {
     registerRowDragger: (rowDraggerElement: HTMLElement, dragStartPixels?: number, value?: string, suppressVisibilityChange?: boolean) => void;
 }
 
-export interface ISetFilterCellRendererParams extends AgGridCommon {
+export interface ISetFilterCellRendererParams<TData = any> extends AgGridCommon<TData> {
     value: any;
-    valueFormatted: any;
+    valueFormatted: string | null | undefined;
 
     /** The cell's column definition. */
     colDef?: ColDef;
@@ -55,14 +55,16 @@ export interface ISetFilterCellRendererParams extends AgGridCommon {
     column?: Column;
 }
 
-export interface ICellRenderer {
-    /** Get the cell to refresh. Return true if successful. Return false if not (or you don't have refresh logic),
-     * then the grid will refresh the cell for you. */
-    refresh(params: ICellRendererParams): boolean;
+export interface ICellRenderer<TData = any> {
+    /**
+     * Get the cell to refresh. Return true if successful. Return false if not (or you don't have refresh logic),
+     * then the grid will refresh the cell for you.
+     */
+    refresh(params: ICellRendererParams<TData>): boolean;
 }
 
-export interface ICellRendererComp extends ICellRenderer, IComponent<ICellRendererParams> { }
+export interface ICellRendererComp<TData = any> extends IComponent<ICellRendererParams<TData>>, ICellRenderer<TData> { }
 
-export interface ICellRendererFunc {
-    (params: ICellRendererParams): HTMLElement | string;
+export interface ICellRendererFunc<TData = any> {
+    (params: ICellRendererParams<TData>): HTMLElement | string;
 }

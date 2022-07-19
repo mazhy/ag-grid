@@ -84,6 +84,9 @@ export class Column implements IHeaderColumn, IProvidedColumn, IEventEmitter {
 
     private actualWidth: any;
 
+    // The measured height of this column's header when autoHeaderHeight is enabled
+    private autoHeaderHeight: number | null = null;
+
     private visible: any;
     private pinned: 'left' | 'right' | null;
     private left: number | null;
@@ -312,7 +315,7 @@ export class Column implements IHeaderColumn, IProvidedColumn, IEventEmitter {
         }
 
         if (!ModuleRegistry.isRegistered(ModuleNames.RichSelectModule)) {
-            if (this.colDef.cellEditor === 'agRichSelect') {
+            if (this.colDef.cellEditor === 'agRichSelect' || this.colDef.cellEditor === 'agRichSelectCellEditor') {
                 if (ModuleRegistry.isPackageBased()) {
                     warnOnce(`AG Grid: ${this.colDef.cellEditor} can only be used with ag-grid-enterprise`, 'ColumnRichSelectMissing');
                 } else {
@@ -402,6 +405,10 @@ export class Column implements IHeaderColumn, IProvidedColumn, IEventEmitter {
 
     public isAutoHeight(): boolean {
         return !!attrToBoolean(this.colDef.autoHeight);
+    }
+
+    public isAutoHeaderHeight(): boolean {
+        return !!attrToBoolean(this.colDef.autoHeaderHeight);
     }
 
     public isRowDrag(rowNode: RowNode): boolean {
@@ -554,7 +561,7 @@ export class Column implements IHeaderColumn, IProvidedColumn, IEventEmitter {
         this.eventService.dispatchEvent(filterChangedEvent);
     }
 
-    public setPinned(pinned: string | boolean | null | undefined): void {
+    public setPinned(pinned: 'left' | 'right' | boolean | null | undefined): void {
         if (pinned === true || pinned === Constants.PINNED_LEFT) {
             this.pinned = Constants.PINNED_LEFT;
         } else if (pinned === Constants.PINNED_RIGHT) {
@@ -655,6 +662,17 @@ export class Column implements IHeaderColumn, IProvidedColumn, IEventEmitter {
     /** Returns the current width of the column. If the column is resized, the actual width is the new size. */
     public getActualWidth(): number {
         return this.actualWidth;
+    }
+
+    public getAutoHeaderHeight(): number | null {
+        return this.autoHeaderHeight;
+    }
+
+    /** Returns true if the header height has changed */
+    public setAutoHeaderHeight(height: number): boolean {
+        const changed = height !== this.autoHeaderHeight;
+        this.autoHeaderHeight = height;
+        return changed;
     }
 
     private createBaseColDefParams(rowNode: RowNode): BaseColDefParams {

@@ -13,13 +13,13 @@ const columnDefs: ColDef[] = [
   { field: 'total' },
 ]
 
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   columnDefs: columnDefs,
   defaultColDef: {
     sortable: true,
   },
   autoGroupColumnDef: {
-    comparator: (valueA, valueB, nodeA, nodeB, isInverted) => {
+    comparator: (valueA, valueB, nodeA, nodeB, isDescending) => {
       var res = valueA == valueB ? 0 : valueA > valueB ? 1 : -1
       return res
     },
@@ -35,5 +35,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
   fetch('https://www.ag-grid.com/example-assets/olympic-winners.json')
     .then(response => response.json())
-    .then(data => gridOptions.api!.setRowData(data))
+    .then((data: IOlympicData[]) => gridOptions.api!.setRowData(data))
 })

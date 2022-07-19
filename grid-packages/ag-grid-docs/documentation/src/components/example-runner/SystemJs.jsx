@@ -18,7 +18,7 @@ import isDevelopment from 'utils/is-development';
 
 const localConfiguration = {
     gridMap: {
-        "@ag-grid-community/core/dist/styles": `${localPrefix}/@ag-grid-community/core/dist/styles`,
+        "@ag-grid-community/styles": `${localPrefix}/@ag-grid-community/styles`,
         "@ag-grid-community/react": `${localPrefix}/@ag-grid-community/react`,
         "@ag-grid-community/angular": `${localPrefix}/@ag-grid-community/angular`,
         "@ag-grid-community/vue": `${localPrefix}/@ag-grid-community/vue`,
@@ -83,7 +83,7 @@ const localConfiguration = {
 
 const publishedConfiguration = {
     gridMap: {
-        "@ag-grid-community/core/dist/styles": `https://unpkg.com/@ag-grid-community/core@${agGridVersion}/dist/styles`,
+        "@ag-grid-community/styles": `https://unpkg.com/@ag-grid-community/styles@${agGridVersion}/`,
         "@ag-grid-community/react": `https://unpkg.com/@ag-grid-community/react@${agGridReactVersion}/`,
         "@ag-grid-community/angular": `https://unpkg.com/@ag-grid-community/angular@${agGridAngularVersion}/`,
         "@ag-grid-community/vue": `https://unpkg.com/@ag-grid-community/vue@${agGridVueVersion}/`,
@@ -252,7 +252,6 @@ const SystemJs = ({ library, boilerplatePath, appLocation, startFile, options, f
 
     let systemJsMap;
     let systemJsPaths;
-
     if (library === 'charts') {
         systemJsMap = configuration.chartMap;
         systemJsPaths = configuration.chartPaths;
@@ -260,6 +259,14 @@ const SystemJs = ({ library, boilerplatePath, appLocation, startFile, options, f
         systemJsMap = configuration.gridMap;
         systemJsPaths = isEnterprise ? configuration.gridEnterprisePaths : configuration.gridCommunityPaths;
     }
+
+    let systemJsVersion = "https://unpkg.com/systemjs@0.19.47/dist/system.js";
+    if (framework === 'angular') {
+        // Angular needs a later version to be able to import @esm-bundle/angular__compiler which
+        // it requires to correctly renderer dynamic components.
+        systemJsVersion = "https://unpkg.com/systemjs@0.21.6/dist/system.js";
+    }
+
 
     return <>
         <script dangerouslySetInnerHTML={{
@@ -270,7 +277,7 @@ const SystemJs = ({ library, boilerplatePath, appLocation, startFile, options, f
             ${Object.keys(systemJsPaths).length > 0 ? `var systemJsPaths = ${format(systemJsPaths)};` : ''}
         `
         }} />
-        <script src="https://unpkg.com/systemjs@0.19.47/dist/system.js" />
+        <script src={systemJsVersion} />
         <script src={systemJsPath} />
         <script dangerouslySetInnerHTML={{ __html: `System.import('${startFile}').catch(function(err) { console.error(err); });` }} />
     </>;

@@ -5,11 +5,14 @@ type FormatType = '' | '%' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'o' | 'p' | 'r'
 function formatDefault(x: number, p?: number): string {
     const xs = x.toPrecision(p);
 
-    out: for (var n = xs.length, i = 1, i0 = -1, i1 = 0; i < n; ++i) {
+    let i0 = -1;
+    let i1 = 0;
+    let exit = false;
+    for (let n = xs.length, i = 1; !exit && i < n; ++i) {
         switch (xs[i]) {
             case '.': i0 = i1 = i; break;
             case '0': if (i0 === 0) i0 = i; i1 = i; break;
-            case 'e': break out;
+            case 'e': exit = true; break;
             default: if (i0 > 0) i0 = 0; break;
         }
     }
@@ -240,15 +243,13 @@ function formatPrefixAuto(x: number, p: number = 0) {
 
     if (i === n) {
         return coefficient;
+    } else if (i > n) {
+        return coefficient + new Array(i - n + 1).join('0');
+    } else if (i > 0) {
+        return coefficient.slice(0, i) + '.' + coefficient.slice(i);
     } else {
-        if (i > n) {
-            return coefficient + new Array(i - n + 1).join('0');
-        } if (i > 0) {
-            return coefficient.slice(0, i) + '.' + coefficient.slice(i);
-        } else {
-            const parts = formatDecimalParts(x, Math.max(0, p + i - 1));
-            return '0.' + new Array(1 - i).join('0') + parts![0]; // less than 1y!
-        }
+        const parts = formatDecimalParts(x, Math.max(0, p + i - 1));
+        return '0.' + new Array(1 - i).join('0') + parts![0]; // less than 1y!
     }
 }
 
@@ -278,7 +279,8 @@ function formatGroup(grouping: number[], thousands: string): (value: string, wid
             g = grouping[j = (j + 1) % grouping.length];
         }
 
-        return t.reverse().join(thousands);
+        t.reverse();
+        return t.join(thousands);
     };
 }
 
@@ -288,11 +290,13 @@ export function formatNumerals(numerals: string[]): (value: string) => string {
 
 // Trims insignificant zeros, e.g., replaces 1.2000k with 1.2k.
 function formatTrim(s: string): string {
-    out: for (var n = s.length, i = 1, i0 = -1, i1 = 0; i < n; ++i) {
+    let i0 = -1, i1 = 0;
+    let exit = false;
+    for (let n = s.length, i = 1; !exit && i < n; ++i) {
         switch (s[i]) {
             case '.': i0 = i1 = i; break;
             case '0': if (i0 === 0) i0 = i; i1 = i; break;
-            default: if (!+s[i]) break out; if (i0 > 0) i0 = 0; break;
+            default: if (!+s[i]) { exit = true; break; } if (i0 > 0) i0 = 0; break;
         }
     }
     return i0 > 0 ? s.slice(0, i0) + s.slice(i1 + 1) : s;
@@ -445,13 +449,13 @@ export interface FormatLocale {
 export function formatLocale(locale: FormatLocaleOptions): FormatLocale {
     const group = locale.grouping === undefined || locale.thousands === undefined
         ? identity
-        : formatGroup(Array.prototype.map.call(locale.grouping, Number) as number[], String(locale.thousands));
+        : formatGroup(locale.grouping.map(Number) as number[], String(locale.thousands));
     const currencyPrefix = locale.currency === undefined ? '' : String(locale.currency[0]);
     const currencySuffix = locale.currency === undefined ? '' : String(locale.currency[1]);
     const decimal = locale.decimal === undefined ? '.' : String(locale.decimal);
     const numerals = locale.numerals === undefined
         ? identity
-        : formatNumerals(Array.prototype.map.call(locale.numerals, String) as string[]);
+        : formatNumerals(locale.numerals.map(String) as string[]);
     const percent = locale.percent === undefined ? '%' : String(locale.percent);
     const minus = locale.minus === undefined ? '\u2212' : String(locale.minus);
     const nan = locale.nan === undefined ? 'NaN' : String(locale.nan);
@@ -523,7 +527,7 @@ export function formatLocale(locale: FormatLocaleOptions): FormatLocale {
             } else {
                 const nx = +x;
                 // Determine the sign. -0 is not less than 0, but 1 / -0 is!
-                var valueNegative = x < 0 || 1 / nx < 0;
+                let valueNegative = x < 0 || 1 / nx < 0;
 
                 // Perform the initial formatting.
                 value = isNaN(nx) ? nan : formatType(Math.abs(nx), precision);

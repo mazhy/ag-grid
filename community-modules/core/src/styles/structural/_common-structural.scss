@@ -160,7 +160,8 @@ ag-grid, ag-grid-angular, ag-grid-ng2, ag-grid-polymer, ag-grid-aurelia  {
 .ag-center-cols-viewport,
 .ag-floating-bottom-viewport,
 .ag-body-horizontal-scroll-viewport,
-.ag-virtual-list-viewport {
+.ag-virtual-list-viewport,
+.ag-sticky-top-viewport {
     position: relative;
     height: 100%;
     min-width: 0px;
@@ -206,12 +207,16 @@ ag-grid, ag-grid-angular, ag-grid-ng2, ag-grid-polymer, ag-grid-aurelia  {
 .ag-body-horizontal-scroll-container,
 .ag-full-width-container,
 .ag-floating-bottom-full-width-container,
-.ag-virtual-list-container {
+.ag-virtual-list-container,
+.ag-sticky-top-container {
     position: relative;
 }
 
 // for when auto height is used but there is no row data
-.ag-header-container, .ag-floating-top-container, .ag-floating-bottom-container {
+.ag-header-container,
+.ag-floating-top-container,
+.ag-floating-bottom-container,
+.ag-sticky-top-container {
     height: 100%;
     white-space: nowrap;
 }
@@ -230,7 +235,8 @@ ag-grid, ag-grid-angular, ag-grid-ng2, ag-grid-polymer, ag-grid-aurelia  {
 
 .ag-full-width-container,
 .ag-floating-top-full-width-container,
-.ag-floating-bottom-full-width-container {
+.ag-floating-bottom-full-width-container,
+.ag-sticky-top-full-width-container {
     position: absolute;
     top: 0px;
     left: 0px;
@@ -284,9 +290,11 @@ ag-grid, ag-grid-angular, ag-grid-ng2, ag-grid-polymer, ag-grid-aurelia  {
         bottom: 0;
         left: 0;
         right: 0;
-        pointer-events: none;
-        &.ag-scrollbar-scrolling, &.ag-scrollbar-active {
-            pointer-events: all;
+        &.ag-apple-scrollbar {
+            display: none;
+            &.ag-scrollbar-scrolling, &.ag-scrollbar-active {
+                display: inherit;
+            }
         }
     }
 }
@@ -367,7 +375,15 @@ ag-grid, ag-grid-angular, ag-grid-ng2, ag-grid-polymer, ag-grid-aurelia  {
 .ag-header-cell-text {
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+}
+
+.ag-header-cell-comp-wrapper {
+    width: 100%;
+    overflow: hidden;
+}
+
+.ag-header-cell-wrap-text .ag-header-cell-comp-wrapper {
+    white-space: normal;
 }
 
 .ag-right-aligned-header .ag-header-cell-label {
@@ -903,6 +919,30 @@ ag-grid, ag-grid-angular, ag-grid-ng2, ag-grid-polymer, ag-grid-aurelia  {
     min-width: 0px;
 }
 
+/**
+ ****************************
+ * Sticky Top
+ ****************************
+*/
+
+.ag-sticky-top {
+    position: absolute;
+    display: flex;
+    width: 100%;
+}
+
+.ag-pinned-left-sticky-top,
+.ag-pinned-right-sticky-top {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+}
+
+.ag-sticky-top-full-width-container {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
 
 /**
  ****************************
@@ -1243,8 +1283,8 @@ ag-grid, ag-grid-angular, ag-grid-ng2, ag-grid-polymer, ag-grid-aurelia  {
     flex-direction: row-reverse;
     align-items: center;
     width: 100%;
-    height: 100%;
     overflow: hidden;
+    padding: 5px 0px 5px 0px;
 }
 
 .ag-right-aligned-header .ag-cell-label-container {
@@ -1556,7 +1596,7 @@ ag-grid, ag-grid-angular, ag-grid-ng2, ag-grid-polymer, ag-grid-aurelia  {
 }
 
 // Default values for themes that do not use the mixins
-@for $i from 1 to 100 {
+@for $i from 1 to 10 {
     .ag-column-select-indent-#{$i} {
         @include ag-unthemed-rtl(( padding-left: $i * 20px ));
     }

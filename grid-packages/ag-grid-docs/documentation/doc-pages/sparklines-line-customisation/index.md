@@ -175,7 +175,7 @@ sparklineOptions: {
 
 More advanced customisations are discussed separately in the following sections:
 
-- [Axis](/sparklines-axis-types/) - configure the x-axis type via `axis` options.
+- [Axis](/sparklines-axis-types/) - configure the axis type via `axis` options.
 - [Tooltips](/sparklines-tooltips/) - configure tooltips using `tooltip` options.
 - [Points of Interest](/sparklines-points-of-interest/) - configure individual points of interest using a `formatter`.
 
@@ -186,12 +186,10 @@ More advanced customisations are discussed separately in the following sections:
 <interface-documentation interfaceName='LineSparklineOptions' overrideSrc='sparklines-line-customisation/resources/line-sparkline-api.json'></interface-documentation>
 
 ### SparklineMarkerOptions
-
-<api-documentation source='sparklines-line-customisation/resources/line-sparkline-api.json' section='SparklineMarkerOptions'></api-documentation>
+<interface-documentation interfaceName='SparklineMarkerOptions' overrideSrc='sparklines-line-customisation/resources/line-sparkline-api.json'></interface-documentation>
 
 ### SparklineAxisOptions
-
-<api-documentation source='sparklines-line-customisation/resources/line-sparkline-api.json' section='SparklineAxisOptions'></api-documentation>
+<interface-documentation interfaceName='SparklineAxisOptions'></interface-documentation>
 
 ## Next Up
 

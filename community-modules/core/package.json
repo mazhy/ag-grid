@@ -1,6 +1,6 @@
 {
   "name": "@ag-grid-community/core",
-  "version": "27.3.0",
+  "version": "28.0.1",
   "description": "Advanced Data Grid / Data Table supporting Javascript / Typescript / React / Angular / Vue",
   "main": "./dist/cjs/es5/main.js",
   "module": "./dist/esm/es5/main.js",
@@ -100,6 +100,7 @@
     "sass-loader": "~10.2.0",
     "stylus": "^0.54.0",
     "ts-jest": "^25.4.0",
+    "ts-morph": "^14.0.0",
     "ts-node": "^8.5.4",
     "tslint": "^5.19.0",
     "typescript": "~3.7.7",

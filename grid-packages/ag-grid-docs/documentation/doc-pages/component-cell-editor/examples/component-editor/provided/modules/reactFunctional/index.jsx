@@ -5,8 +5,8 @@ import ReactDOM, { render } from 'react-dom';
 import { AgGridReact } from '@ag-grid-community/react';
 
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
-import "@ag-grid-community/core/dist/styles/ag-grid.css";
-import "@ag-grid-community/core/dist/styles/ag-theme-alpine.css";
+import "@ag-grid-community/styles/ag-grid.css";
+import "@ag-grid-community/styles/ag-theme-alpine.css";
 
 import { ModuleRegistry } from '@ag-grid-community/core';
 // Register the required feature modules with the Grid
@@ -164,7 +164,7 @@ const NumericEditor = memo(forwardRef((props, ref) => {
         let startValue;
         let highlightAllOnFocus = true;
 
-        if (props.key === KEY_BACKSPACE || props.key === KEY_DELETE) {
+        if (props.eventKey === KEY_BACKSPACE || props.eventKey === KEY_DELETE) {
             // if backspace or delete pressed, we clear the cell
             startValue = '';
         } else if (props.charPress) {
@@ -174,7 +174,7 @@ const NumericEditor = memo(forwardRef((props, ref) => {
         } else {
             // otherwise we start with the current value
             startValue = props.value;
-            if (props.key === KEY_F2) {
+            if (props.eventKey === KEY_F2) {
                 highlightAllOnFocus = false;
             }
         }

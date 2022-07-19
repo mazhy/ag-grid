@@ -1,8 +1,9 @@
 import { getModuleRegistration, ImportType } from './parser-utils';
 import { getImport, toOutput } from './vue-utils';
 import { convertDefaultColDef, getAllMethods, getColumnDefs, getOnGridReadyCode, getPropertyBindings, getTemplate } from "./grid-vanilla-to-vue-common";
+const path = require('path');
 
-function getModuleImports(bindings: any, componentFileNames: string[]): string[] {
+function getModuleImports(bindings: any, componentFileNames: string[], allStylesheets: string[]): string[] {
     const { gridSettings } = bindings;
 
     let imports = [
@@ -10,10 +11,16 @@ function getModuleImports(bindings: any, componentFileNames: string[]): string[]
         "import { AgGridVue } from '@ag-grid-community/vue';",
     ];
 
-    imports.push("import '@ag-grid-community/core/dist/styles/ag-grid.css';");
+    imports.push("import '@ag-grid-community/styles/ag-grid.css';");
     // to account for the (rare) example that has more than one class...just default to alpine if it does
-    const theme = gridSettings.theme || 'ag-theme-alpine';
-    imports.push(`import "@ag-grid-community/core/dist/styles/${theme}.css";`);
+    // we strip off any '-dark' from the theme when loading the CSS as dark versions are now embedded in the
+    // "source" non dark version
+    const theme = gridSettings.theme ? gridSettings.theme.replace('-dark', '') : 'ag-theme-alpine';
+    imports.push(`import "@ag-grid-community/styles/${theme}.css";`);
+
+    if(allStylesheets && allStylesheets.length > 0) {
+        allStylesheets.forEach(styleSheet => imports.push(`import './${path.basename(styleSheet)}';`));
+    }
 
     if (componentFileNames) {
         imports.push(...componentFileNames.map(componentFileName => getImport(componentFileName, 'Vue', '')));
@@ -24,7 +31,7 @@ function getModuleImports(bindings: any, componentFileNames: string[]): string[]
     return imports;
 }
 
-function getPackageImports(bindings: any, componentFileNames: string[]): string[] {
+function getPackageImports(bindings: any, componentFileNames: string[], allStylesheets: string[]): string[] {
     const { gridSettings } = bindings;
 
     const imports = [
@@ -36,11 +43,17 @@ function getPackageImports(bindings: any, componentFileNames: string[]): string[
         imports.push("import 'ag-grid-enterprise';");
     }
 
-    imports.push("import 'ag-grid-community/dist/styles/ag-grid.css';");
+    imports.push("import 'ag-grid-community/styles/ag-grid.css';");
 
     // to account for the (rare) example that has more than one class...just default to alpine if it does
-    const theme = gridSettings.theme || 'ag-theme-alpine';
-    imports.push(`import 'ag-grid-community/dist/styles/${theme}.css';`);
+    // we strip off any '-dark' from the theme when loading the CSS as dark versions are now embedded in the
+    // "source" non dark version
+    const theme = gridSettings.theme ? gridSettings.theme.replace('-dark', '') : 'ag-theme-alpine';
+    imports.push(`import 'ag-grid-community/styles/${theme}.css';`);
+
+    if(allStylesheets && allStylesheets.length > 0) {
+        allStylesheets.forEach(styleSheet => imports.push(`import './${path.basename(styleSheet)}';`));
+    }
 
     if (componentFileNames) {
         imports.push(...componentFileNames.map(componentFileName => getImport(componentFileName, 'Vue', '')));
@@ -49,15 +62,15 @@ function getPackageImports(bindings: any, componentFileNames: string[]): string[
     return imports;
 }
 
-function getImports(bindings: any, componentFileNames: string[], importType: ImportType): string[] {
+function getImports(bindings: any, componentFileNames: string[], importType: ImportType, allStylesheets: string[]): string[] {
     if (importType === 'packages') {
-        return getPackageImports(bindings, componentFileNames);
+        return getPackageImports(bindings, componentFileNames, allStylesheets);
     } else {
-        return getModuleImports(bindings, componentFileNames);
+        return getModuleImports(bindings, componentFileNames, allStylesheets);
     }
 }
 
-export function vanillaToVue(bindings: any, componentFileNames: string[]): (importType: ImportType) => string {
+export function vanillaToVue(bindings: any, componentFileNames: string[], allStylesheets: string[]): (importType: ImportType) => string {
     const vueComponents = bindings.components.map(component => `${component.name}:${component.value}`);
 
     const onGridReady = getOnGridReadyCode(bindings);
@@ -67,7 +80,7 @@ export function vanillaToVue(bindings: any, componentFileNames: string[]): (impo
     const defaultColDef = bindings.defaultColDef ? convertDefaultColDef(bindings.defaultColDef, vueComponents, componentFileNames) : null;
 
     return importType => {
-        const imports = getImports(bindings, componentFileNames, importType);
+        const imports = getImports(bindings, componentFileNames, importType, allStylesheets);
         const [propertyAssignments, propertyVars, propertyAttributes] = getPropertyBindings(bindings, componentFileNames, importType, vueComponents);
         const template = getTemplate(bindings, propertyAttributes.concat(eventAttributes));
 

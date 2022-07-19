@@ -24,7 +24,8 @@
                 'systemjs-babel-build': 'npm:systemjs-plugin-babel@0.0.25/systemjs-babel-browser.js',
 
                 // css plugin
-                'css': 'npm:systemjs-plugin-css@0.1.37/css.js',
+                css: boilerplatePath + "css.js",
+                // css: 'npm:systemjs-plugin-css@0.1.37/css.js',
 
                 // vuejs
                 'vue': 'npm:vue@2.6.12/dist/vue.min.js',
@@ -33,7 +34,6 @@
                 'vue-class-component': 'npm:vue-class-component@6.3.2/dist/vue-class-component.min.js',
                 'vue-property-decorator': 'npm:vue-property-decorator@7.2.0/lib/vue-property-decorator.umd.js',
 
-                lodash: 'npm:lodash@4.17.15',
                 app: appLocation + 'app'
             },
             systemJsMap

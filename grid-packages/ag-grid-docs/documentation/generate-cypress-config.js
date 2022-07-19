@@ -16,11 +16,8 @@ const basePath = './doc-pages/';
     const examples = getExamples();
     const apiPages = getApiDocumentationPages();
 
-    try {
-        if (!fs.existsSync('./_gen')) {
-            await fs.mkdir('./_gen');
-        }
-        await fs.writeJson('./_gen/cypress.config.json', { examples, apiPages })
+    try {        
+        await fs.writeJson('./cypress.config.AUTO.json', { examples, apiPages })
         console.log('Generating Cypress Test Config: Success!')
     } catch (err) {
         console.error(err)
@@ -34,8 +31,8 @@ function getExamples() {
     files.forEach(page => {
 
         // We need to handle stale folders that have been deleted from Git but still exist due to containing unversioned files.
-        const indexFilePath = basePath + page + '/index.md';
-        const hasIndexMarkdown = fs.existsSync(indexFilePath);
+        const indexFilePaths = [basePath + page + '/index.md', basePath + page + '/_index.md'];
+        const hasIndexMarkdown = indexFilePaths.some(p => fs.existsSync(p));
         const exampleDir = basePath + page + '/examples/';
         if (hasIndexMarkdown && fs.existsSync(exampleDir)) {
 

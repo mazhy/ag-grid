@@ -275,7 +275,7 @@ title: "Testing AG Grid"
 |     TestBed.configureTestingModule({
 |         imports: [
 |             FormsModule,
-|             AgGridModule.withComponents([])
+|             AgGridModule
 |         ],
 |         declarations: [TestHostComponent]
 |     }).compileComponents();
@@ -294,7 +294,7 @@ title: "Testing AG Grid"
 |     TestBed.configureTestingModule({
 |         imports: [
 |             FormsModule,
-| +            AgGridModule.withComponents([RendererComponent, EditorComponent])
+| +            AgGridModule
 |         ],
 | +        declarations: [TestHostComponent, RendererComponent, EditorComponent]
 |     }).compileComponents();
@@ -304,9 +304,7 @@ title: "Testing AG Grid"
 | }));
 | ```
 |[[note]]
-|| The `withComponents` call is only necessary for Angular <= v8 or if Ivy has been disabled (`enableIvy:false`).
-|| If this is the case you must use `withComponents` to enable the grid to use Angular
-|| components as cells / headers  otherwise you can ignore it and just import `AgGridModule`.
+|| If you are using our [legacy](/components/#view-engine-declaring-custom-components) packages and Angular <= v8 or if Ivy has been disabled you additionally need to provide your components to the grid via `AgGridModule.withComponents([RendererComponent, EditorComponent])`.
 |
 | ## Testing via the Grid API
 |
@@ -464,8 +462,8 @@ title: "Testing AG Grid"
 | ```js
 | // not strictly required for testing but useful when debugging the grid in action
 | files: [
-|     '../node_modules/ag-grid-community/dist/styles/ag-grid.css',
-|     '../node_modules/ag-grid-community/dist/styles/ag-theme-alpine.css'
+|     '../node_modules/ag-grid-community/styles/ag-grid.css',
+|     '../node_modules/ag-grid-community/styles/ag-theme-alpine.css'
 | ]
 | ```
 |
@@ -837,7 +835,7 @@ title: "Testing AG Grid"
 | </template>
 |
 | <script>
-|     import {AgGridVue} from "@ag-grid-community/vue";
+|     import {AgGridVue} from "ag-grid-vue3";
 |     import Editor from './Editor.vue';
 |
 |     export default {

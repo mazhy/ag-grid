@@ -1,6 +1,5 @@
 const gulp = require('gulp');
-const {series, parallel} = gulp;
-
+const {series} = gulp;
 const fs = require('fs');
 const clean = require('gulp-clean');
 const rename = require("gulp-rename");
@@ -55,11 +54,16 @@ const copyGridCoreStyles = (done) => {
         done("node_modules/@ag-grid-community/core/dist/styles doesn't exist - exiting")
     }
 
+    // we don't have a dist folder in styles so just check for at least the core structural css file
+    if (!fs.existsSync('./node_modules/@ag-grid-community/styles/ag-grid.css')) {
+        done("./node_modules/@ag-grid-community/styles/ag-grid.css doesn't exist - exiting")
+    }
+
     return merge([
             gulp.src('./node_modules/@ag-grid-community/core/dist/styles/**/*').pipe(gulp.dest('./dist/styles')),
-            gulp.src([
-                './node_modules/@ag-grid-community/core/src/styles/**/*'
-            ]).pipe(gulp.dest('./src/styles')),
+            gulp.src('./node_modules/@ag-grid-community/core/src/styles/**/*').pipe(gulp.dest('./src/styles')),
+            gulp.src('./node_modules/@ag-grid-community/styles/*.css').pipe(gulp.dest('./styles')),
+            gulp.src('./node_modules/@ag-grid-community/styles/*.scss').pipe(gulp.dest('./styles'))
         ]
     );
 };
@@ -91,7 +95,9 @@ const copyGridCoreTypings = (done) => {
             const match = (this.file.relative.match(WINDOWS ? /\\/g : /\//g) || []);
             const depth = match.length;
 
-            if (depth === 0) { return './main'; }
+            if (depth === 0) {
+                return './main';
+            }
 
             return `${Array(depth).fill('../').join('')}main`;
         }))
@@ -116,7 +122,8 @@ const copyGridAllUmdFiles = (done) => {
 
     return gulp.src([
         './node_modules/@ag-grid-community/all-modules/dist/ag-grid-community*.js',
-        '!./node_modules/@ag-grid-community/all-modules/dist/**/*.cjs*.js']).pipe(gulp.dest('./dist/'));
+        '!./node_modules/@ag-grid-community/all-modules/dist/**/*.cjs*.js'])
+        .pipe(gulp.dest('./dist/'));
 };
 
 // copy from grid-core tasks
@@ -131,9 +138,9 @@ gulp.task('tsc-no-clean', tscMainTask);
 gulp.task('tsc', series('clean', 'tsc-no-clean'));
 
 // webpack related tasks
-gulp.task('package', series('copy-umd-files',  'copy-and-concat-typings-main'));
+gulp.task('package', series('copy-umd-files'));
 
 // default/release task
-gulp.task('build', series('tsc', 'copy-core-typings', 'copy-grid-core-styles'))
+gulp.task('build', series('tsc', 'copy-core-typings', 'copy-grid-core-styles', 'copy-and-concat-typings-main'))
 
 

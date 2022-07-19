@@ -26,6 +26,11 @@
     "meta": { "isTypeAlias": true },
     "type": "{ width: number; height: number; }"
   },
+  "OffscreenCanvasRenderingContext2D": {
+    "meta": { "isTypeAlias": true },
+    "type": "any"
+  },
+  "OffscreenCanvas": { "meta": { "isTypeAlias": true }, "type": "any" },
   "FontStyle": {
     "meta": { "isTypeAlias": true },
     "type": "'normal' | 'italic' | 'oblique'"
@@ -47,6 +52,7 @@
   "CssColor": { "meta": { "isTypeAlias": true }, "type": "string" },
   "Opacity": { "meta": { "isTypeAlias": true }, "type": "number" },
   "PixelSize": { "meta": { "isTypeAlias": true }, "type": "number" },
+  "DataValue": { "meta": { "isTypeAlias": true }, "type": "any" },
   "AgChartThemePalette": {
     "meta": {},
     "type": { "fills": "string[]", "strokes": "string[]" },
@@ -112,16 +118,20 @@
       "common?": "/** Specifies defaults for all chart types. Be careful to only use properties that apply to all chart types here. For example, don't specify `navigator` configuration here as navigators are only available in cartesian charts. */"
     }
   },
+  "AgCartesianAxisThemeSpecialOptions": {
+    "meta": { "isTypeAlias": true },
+    "type": "'position' | 'type' | 'crossLines'"
+  },
   "AgCartesianAxisThemeOptions": {
     "meta": {
       "typeParams": ["T"],
       "doc": "/** This is the configuration shared by all types of axis. */"
     },
     "type": {
-      "top?": "Omit<T, 'position' | 'type'>",
-      "right?": "Omit<T, 'position' | 'type'>",
-      "bottom?": "Omit<T, 'position' | 'type'>",
-      "left?": "Omit<T, 'position' | 'type'>"
+      "top?": "Omit<T, AgCartesianAxisThemeSpecialOptions>",
+      "right?": "Omit<T, AgCartesianAxisThemeSpecialOptions>",
+      "bottom?": "Omit<T, AgCartesianAxisThemeSpecialOptions>",
+      "left?": "Omit<T, AgCartesianAxisThemeSpecialOptions>"
     },
     "docs": {
       "top?": "/** An object with axis theme overrides for the `top` positioned axes. Same configs apply here as one level above. For example, to rotate labels by 45 degrees in 'top' positioned axes one can use `top: { label: { rotation: 45 } } }`. */",
@@ -131,7 +141,7 @@
     }
   },
   "AgCartesianThemeOptions": {
-    "meta": { "typeParams": ["S"] },
+    "meta": { "typeParams": ["S = AgCartesianSeriesTheme"] },
     "type": {
       "axes?": "AgCartesianAxesTheme",
       "series?": "S",
@@ -170,7 +180,7 @@
     }
   },
   "AgPolarThemeOptions": {
-    "meta": { "typeParams": ["S"] },
+    "meta": { "typeParams": ["S = AgPolarSeriesTheme"] },
     "type": {
       "series?": "S",
       "data?": "any[]",
@@ -205,7 +215,7 @@
     }
   },
   "AgHierarchyThemeOptions": {
-    "meta": { "typeParams": ["S"] },
+    "meta": { "typeParams": ["S = AgHierarchySeriesTheme"] },
     "type": {
       "series?": "S",
       "data?": "any[]",
@@ -239,6 +249,37 @@
       "theme?": "/** Theme to use for rendering of the chart. Specify an inbuilt theme name, or provide an `AgChartTheme` instance to customise. */"
     }
   },
+  "AgCrossLineThemeOptions": {
+    "meta": {},
+    "type": {
+      "enabled?": "boolean",
+      "value?": "DataValue",
+      "range?": "[DataValue, DataValue]",
+      "fill?": "CssColor",
+      "fillOpacity?": "Opacity",
+      "stroke?": "CssColor",
+      "strokeWidth?": "PixelSize",
+      "strokeOpacity?": "Opacity",
+      "lineDash?": "PixelSize[]",
+      "label?": "AgCrossLineLabelOptions"
+    },
+    "docs": {
+      "enabled?": "/** Whether or not to show the cross line. */",
+      "value?": "/** The data value at which the line should be positioned. This property is used if the crossLine type is `line`. */",
+      "range?": "/** The range of values from the data used to display lines at a desired chart region. This property is only used for crossLine type `range`. */",
+      "fill?": "/** The colour to use for the fill of the range. */",
+      "fillOpacity?": "/** The opacity of the fill for the range. */",
+      "stroke?": "/** The colour of the stroke for the lines. */",
+      "strokeWidth?": "/** The width in pixels of the stroke for the lines. */",
+      "strokeOpacity?": "/** The opacity of the stroke for the lines. */",
+      "lineDash?": "/** Defines how the line stroke is rendered. Every number in the array specifies the length in pixels of alternating dashes and gaps. For example, `[6, 3]` means dashes with a length of `6` pixels with gaps between of `3` pixels. */",
+      "label?": "/** Configuration for the crossLine label. */"
+    }
+  },
+  "AgCartesianAxesCrossLineThemeOptions": {
+    "meta": {},
+    "type": { "crossLines?": "AgCrossLineThemeOptions" }
+  },
   "AgNumberAxisThemeOptions": {
     "meta": {},
     "type": {
@@ -246,10 +287,11 @@
       "min?": "number",
       "max?": "number",
       "tick?": "AgAxisNumberTickOptions",
-      "top?": "Omit<AgNumberAxisOptions, 'position' | 'type'>",
-      "right?": "Omit<AgNumberAxisOptions, 'position' | 'type'>",
-      "bottom?": "Omit<AgNumberAxisOptions, 'position' | 'type'>",
-      "left?": "Omit<AgNumberAxisOptions, 'position' | 'type'>",
+      "top?": "Omit<AgNumberAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "right?": "Omit<AgNumberAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "bottom?": "Omit<AgNumberAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "left?": "Omit<AgNumberAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "crossLines?": "AgCrossLineThemeOptions",
       "position?": "AgCartesianAxisPosition",
       "title?": "AgChartCaptionOptions",
       "line?": "AgAxisLineOptions",
@@ -272,6 +314,7 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
   },
@@ -283,10 +326,11 @@
       "max?": "number",
       "base?": "number",
       "tick?": "AgAxisNumberTickOptions",
-      "top?": "Omit<AgLogAxisOptions, 'position' | 'type'>",
-      "right?": "Omit<AgLogAxisOptions, 'position' | 'type'>",
-      "bottom?": "Omit<AgLogAxisOptions, 'position' | 'type'>",
-      "left?": "Omit<AgLogAxisOptions, 'position' | 'type'>",
+      "top?": "Omit<AgLogAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "right?": "Omit<AgLogAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "bottom?": "Omit<AgLogAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "left?": "Omit<AgLogAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "crossLines?": "AgCrossLineThemeOptions",
       "position?": "AgCartesianAxisPosition",
       "title?": "AgChartCaptionOptions",
       "line?": "AgAxisLineOptions",
@@ -310,6 +354,7 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
   },
@@ -319,10 +364,11 @@
       "paddingInner?": "number",
       "paddingOuter?": "number",
       "tick?": "AgAxisNumberTickOptions",
-      "top?": "Omit<AgCategoryAxisOptions, 'position' | 'type'>",
-      "right?": "Omit<AgCategoryAxisOptions, 'position' | 'type'>",
-      "bottom?": "Omit<AgCategoryAxisOptions, 'position' | 'type'>",
-      "left?": "Omit<AgCategoryAxisOptions, 'position' | 'type'>",
+      "top?": "Omit<AgCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "right?": "Omit<AgCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "bottom?": "Omit<AgCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "left?": "Omit<AgCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "crossLines?": "AgCrossLineThemeOptions",
       "position?": "AgCartesianAxisPosition",
       "title?": "AgChartCaptionOptions",
       "line?": "AgAxisLineOptions",
@@ -342,6 +388,7 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
   },
@@ -349,10 +396,11 @@
     "meta": {},
     "type": {
       "tick?": "AgAxisNumberTickOptions",
-      "top?": "Omit<AgGroupedCategoryAxisOptions, 'position' | 'type'>",
-      "right?": "Omit<AgGroupedCategoryAxisOptions, 'position' | 'type'>",
-      "bottom?": "Omit<AgGroupedCategoryAxisOptions, 'position' | 'type'>",
-      "left?": "Omit<AgGroupedCategoryAxisOptions, 'position' | 'type'>",
+      "top?": "Omit<AgGroupedCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "right?": "Omit<AgGroupedCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "bottom?": "Omit<AgGroupedCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "left?": "Omit<AgGroupedCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "crossLines?": "AgCrossLineThemeOptions",
       "position?": "AgCartesianAxisPosition",
       "title?": "AgChartCaptionOptions",
       "line?": "AgAxisLineOptions",
@@ -372,6 +420,7 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
   },
@@ -380,10 +429,11 @@
     "type": {
       "nice?": "boolean",
       "tick?": "AgAxisTimeTickOptions",
-      "top?": "Omit<AgTimeAxisOptions, 'position' | 'type'>",
-      "right?": "Omit<AgTimeAxisOptions, 'position' | 'type'>",
-      "bottom?": "Omit<AgTimeAxisOptions, 'position' | 'type'>",
-      "left?": "Omit<AgTimeAxisOptions, 'position' | 'type'>",
+      "top?": "Omit<AgTimeAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "right?": "Omit<AgTimeAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "bottom?": "Omit<AgTimeAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "left?": "Omit<AgTimeAxisOptions, AgCartesianAxisThemeSpecialOptions>",
+      "crossLines?": "AgCrossLineThemeOptions",
       "position?": "AgCartesianAxisPosition",
       "title?": "AgChartCaptionOptions",
       "line?": "AgAxisLineOptions",
@@ -404,6 +454,7 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
   },
@@ -498,7 +549,6 @@
     "meta": {},
     "type": {
       "enabled?": "boolean",
-      "padding?": "AgChartPaddingOptions",
       "text?": "string",
       "fontStyle?": "FontStyle",
       "fontWeight?": "FontWeight",
@@ -597,6 +647,7 @@
   "AgChartLegendLabelOptions": {
     "meta": {},
     "type": {
+      "maxLength?": "number",
       "color?": "CssColor",
       "fontStyle?": "FontStyle",
       "fontWeight?": "FontWeight",
@@ -605,6 +656,7 @@
       "formatter?": "(id: string, itemId: any, value: string) => string"
     },
     "docs": {
+      "maxLength?": "/** If the label text exceeds the maximum length, it will be truncated and an ellipsis will be appended to indicate this. */",
       "color?": "/** The colour of the text. */",
       "fontStyle?": "/** The font style to use for the legend. */",
       "fontWeight?": "/** The font weight to use for the legend. */",
@@ -618,14 +670,31 @@
     "type": {
       "marker?": "AgChartLegendMarkerOptions",
       "label?": "AgChartLegendLabelOptions",
+      "maxWidth?": "PixelSize",
       "paddingX?": "PixelSize",
       "paddingY?": "PixelSize"
     },
     "docs": {
       "marker?": "/** Configuration for the legend markers. */",
       "label?": "/** Configuration for the legend labels. */",
+      "maxWidth?": "/** Used to constrain the width of legend items. */",
       "paddingX?": "/** The horizontal spacing in pixels to use between legend items. */",
       "paddingY?": "/** The vertical spacing in pixels to use between legend items. */"
+    }
+  },
+  "AgChartLegendClickEvent": {
+    "meta": {},
+    "type": { "itemId": "string", "enabled": "boolean" },
+    "docs": {
+      "itemId": "/** Legend item id - based on series id. */",
+      "enabled": "/** Whether the legend item is currently enabled or not. */"
+    }
+  },
+  "AgChartLegendListeners": {
+    "meta": {},
+    "type": { "legendItemClick?": "(event: AgChartLegendClickEvent) => void" },
+    "docs": {
+      "legendItemClick?": "/** The listener to call when a legend item is clicked. */"
     }
   },
   "AgChartLegendOptions": {
@@ -634,13 +703,15 @@
       "enabled?": "boolean",
       "position?": "AgChartLegendPosition",
       "spacing?": "PixelSize",
-      "item?": "AgChartLegendItemOptions"
+      "item?": "AgChartLegendItemOptions",
+      "listeners?": "AgChartLegendListeners"
     },
     "docs": {
       "enabled?": "/** Whether or not to show the legend. */",
       "position?": "/** Where the legend should show in relation to the chart. */",
       "spacing?": "/** The spacing in pixels to use outside the legend. */",
-      "item?": "/** Configuration for the legend items that consist of a marker and a label. */"
+      "item?": "/** Configuration for the legend items that consist of a marker and a label. */",
+      "listeners?": "/** Optional callbacks for specific legend-related events. */"
     }
   },
   "AgChartTooltipOptions": {
@@ -669,7 +740,7 @@
   "AgBaseChartListeners": {
     "meta": {},
     "type": {
-      "seriesNodeClick": "(type: 'seriesNodeClick', series: any, datum: any, xKey: string, yKey: string) => any",
+      "seriesNodeClick": "(event: { type: 'seriesNodeClick'; series: any; datum: any; xKey: string; yKey: string; }) => any",
       "[key: string]": "Function"
     },
     "docs": {
@@ -751,7 +822,7 @@
       "color?": "CssColor"
     },
     "docs": {
-      "count?": "/** A hint of how many ticks to use across an axis. The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given. */",
+      "count?": "/** A hint of how many ticks to use across an axis.\n * The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given. */",
       "width?": "/** The width in pixels of the axis ticks (and corresponding grid line). */",
       "size?": "/** The length in pixels of the axis ticks. */",
       "color?": "/** The colour of the axis ticks. */"
@@ -766,7 +837,7 @@
       "color?": "CssColor"
     },
     "docs": {
-      "count?": "/** A hint of how many ticks to use across an axis. The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given.<br/><br/>The following intervals from the `agCharts.time` namespace can be used: `millisecond, second, minute, hour, day, sunday, monday, tuesday, wednesday, thursday, friday, saturday, month, year, utcMinute, utcHour, utcDay, utcMonth, utcYear`. And derived intervals can be created by using the `every` method on the default ones. For example, `agCharts.time.month.every(2)` will return a derived interval that will make the axis place ticks for every other month.<br/><br/> */",
+      "count?": "/** A hint of how many ticks to use across an axis.\n * The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given.\n * The following intervals from the `agCharts.time` namespace can be used:\n * `millisecond, second, minute, hour, day, sunday, monday, tuesday, wednesday, thursday, friday, saturday, month, year, utcMinute, utcHour, utcDay, utcMonth, utcYear`.\n * Derived intervals can be created by using the `every` method on the default ones. For example, `agCharts.time.month.every(2)` will return a derived interval that will make the axis place ticks for every other month. */",
       "width?": "/** The width in pixels of the axis ticks (and corresponding grid line). */",
       "size?": "/** The length in pixels of the axis ticks. */",
       "color?": "/** The colour of the axis ticks. */"
@@ -794,7 +865,7 @@
       "autoRotate?": "boolean",
       "autoRotateAngle?": "number",
       "format?": "string",
-      "formatter?": "(params: AgAxisLabelFormatterParams) => string"
+      "formatter?": "(params: AgAxisLabelFormatterParams) => string | undefined"
     },
     "docs": {
       "fontStyle?": "/** The font style to use for the labels. */",
@@ -830,6 +901,7 @@
       "line?": "AgAxisLineOptions",
       "label?": "AgAxisLabelOptions",
       "gridStyle?": "AgAxisGridStyle[]",
+      "crossLines?": "AgCrossLineOptions[]",
       "keys?": "string[]",
       "thickness?": "PixelSize"
     },
@@ -839,8 +911,69 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
+  },
+  "AgCrossLineOptions": {
+    "meta": {},
+    "type": {
+      "enabled?": "boolean",
+      "type": "'line' | 'range'",
+      "value?": "DataValue",
+      "range?": "[DataValue, DataValue]",
+      "fill?": "CssColor",
+      "fillOpacity?": "Opacity",
+      "stroke?": "CssColor",
+      "strokeWidth?": "PixelSize",
+      "strokeOpacity?": "Opacity",
+      "lineDash?": "PixelSize[]",
+      "label?": "AgCrossLineLabelOptions"
+    },
+    "docs": {
+      "enabled?": "/** Whether or not to show the cross line. */",
+      "type": "/** Type of cross line to render. */",
+      "value?": "/** The data value at which the line should be positioned. This property is used if the crossLine type is `line`. */",
+      "range?": "/** The range of values from the data used to display lines at a desired chart region. This property is only used for crossLine type `range`. */",
+      "fill?": "/** The colour to use for the fill of the range. */",
+      "fillOpacity?": "/** The opacity of the fill for the range. */",
+      "stroke?": "/** The colour of the stroke for the lines. */",
+      "strokeWidth?": "/** The width in pixels of the stroke for the lines. */",
+      "strokeOpacity?": "/** The opacity of the stroke for the lines. */",
+      "lineDash?": "/** Defines how the line stroke is rendered. Every number in the array specifies the length in pixels of alternating dashes and gaps. For example, `[6, 3]` means dashes with a length of `6` pixels with gaps between of `3` pixels. */",
+      "label?": "/** Configuration for the crossLine label. */"
+    }
+  },
+  "AgCrossLineLabelOptions": {
+    "meta": {},
+    "type": {
+      "enabled?": "boolean",
+      "text?": "string",
+      "fontStyle?": "FontStyle",
+      "fontWeight?": "FontWeight",
+      "fontSize?": "FontSize",
+      "fontFamily?": "FontFamily",
+      "padding?": "PixelSize",
+      "color?": "CssColor",
+      "position?": "AgCrossLineLabelPosition",
+      "rotation?": "number"
+    },
+    "docs": {
+      "enabled?": "/** Whether or not to show the cross line label. */",
+      "text?": "/** The text to show in the label. */",
+      "fontStyle?": "/** The font style to use for the label. */",
+      "fontWeight?": "/** The font weight to use for the label. */",
+      "fontSize?": "/** The font size in pixels to use for the label. */",
+      "fontFamily?": "/** The font family to use for the label. */",
+      "padding?": "/** Padding in pixels between the label and the edge of the crossLine. */",
+      "color?": "/** The colour to use for the label. */",
+      "position?": "/** The position of the crossLine label. */",
+      "rotation?": "/** The rotation of the crossLine label in degrees. */"
+    }
+  },
+  "AgCrossLineLabelPosition": {
+    "meta": { "isTypeAlias": true },
+    "type": "'top' | 'left' | 'right' | 'bottom' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight' | 'inside' | 'insideLeft' | 'insideRight' | 'insideTop' | 'insideBottom' | 'insideTopLeft' | 'insideBottomLeft' | 'insideTopRight' | 'insideBottomRight'"
   },
   "AgNumberAxisOptions": {
     "meta": {},
@@ -855,6 +988,7 @@
       "line?": "AgAxisLineOptions",
       "label?": "AgAxisLabelOptions",
       "gridStyle?": "AgAxisGridStyle[]",
+      "crossLines?": "AgCrossLineOptions[]",
       "keys?": "string[]",
       "thickness?": "PixelSize"
     },
@@ -868,6 +1002,7 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
   },
@@ -885,6 +1020,7 @@
       "line?": "AgAxisLineOptions",
       "label?": "AgAxisLabelOptions",
       "gridStyle?": "AgAxisGridStyle[]",
+      "crossLines?": "AgCrossLineOptions[]",
       "keys?": "string[]",
       "thickness?": "PixelSize"
     },
@@ -899,6 +1035,7 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
   },
@@ -914,6 +1051,7 @@
       "line?": "AgAxisLineOptions",
       "label?": "AgAxisLabelOptions",
       "gridStyle?": "AgAxisGridStyle[]",
+      "crossLines?": "AgCrossLineOptions[]",
       "keys?": "string[]",
       "thickness?": "PixelSize"
     },
@@ -924,6 +1062,7 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
   },
@@ -937,6 +1076,7 @@
       "line?": "AgAxisLineOptions",
       "label?": "AgAxisLabelOptions",
       "gridStyle?": "AgAxisGridStyle[]",
+      "crossLines?": "AgCrossLineOptions[]",
       "keys?": "string[]",
       "thickness?": "PixelSize"
     },
@@ -947,6 +1087,7 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
   },
@@ -961,6 +1102,7 @@
       "line?": "AgAxisLineOptions",
       "label?": "AgAxisLabelOptions",
       "gridStyle?": "AgAxisGridStyle[]",
+      "crossLines?": "AgCrossLineOptions[]",
       "keys?": "string[]",
       "thickness?": "PixelSize"
     },
@@ -972,6 +1114,7 @@
       "line?": "/** Configuration for the axis line. */",
       "label?": "/** Configuration for the axis labels, shown next to the ticks. */",
       "gridStyle?": "/** Configuration of the lines used to form the grid in the chart area. */",
+      "crossLines?": "/** Add cross lines or regions corresponding to data values. */",
       "thickness?": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */"
     }
   },
@@ -1111,9 +1254,9 @@
       "size?": "PixelSize",
       "maxSize?": "PixelSize",
       "fill?": "CssColor",
+      "fillOpacity?": "Opacity",
       "stroke?": "CssColor",
       "strokeWidth?": "PixelSize",
-      "fillOpacity?": "Opacity",
       "strokeOpacity?": "Opacity"
     },
     "docs": {
@@ -1122,10 +1265,10 @@
       "size?": "/** The size in pixels of the markers. */",
       "maxSize?": "/** For series where the size of the marker is determined by the data, this determines the largest size a marker can be in pixels. */",
       "fill?": "/** The colour to use for marker fills. If this is not specified, the markers will take their fill from the series. */",
+      "fillOpacity?": "/** Opacity of the marker fills. */",
       "stroke?": "/** The colour to use for marker strokes. If this is not specified, the markers will take their stroke from the series. */",
       "strokeWidth?": "/** The width in pixels of the marker stroke. If this is not specified, the markers will take their stroke width from the series. */",
-      "fillOpacity?": "/** */",
-      "strokeOpacity?": "/** */"
+      "strokeOpacity?": "/** Opacity of the marker strokes. */"
     }
   },
   "AgSeriesMarkerFormatterParams": {
@@ -1174,9 +1317,9 @@
       "size?": "PixelSize",
       "maxSize?": "PixelSize",
       "fill?": "CssColor",
+      "fillOpacity?": "Opacity",
       "stroke?": "CssColor",
       "strokeWidth?": "PixelSize",
-      "fillOpacity?": "Opacity",
       "strokeOpacity?": "Opacity"
     },
     "docs": {
@@ -1186,10 +1329,10 @@
       "size?": "/** The size in pixels of the markers. */",
       "maxSize?": "/** For series where the size of the marker is determined by the data, this determines the largest size a marker can be in pixels. */",
       "fill?": "/** The colour to use for marker fills. If this is not specified, the markers will take their fill from the series. */",
+      "fillOpacity?": "/** Opacity of the marker fills. */",
       "stroke?": "/** The colour to use for marker strokes. If this is not specified, the markers will take their stroke from the series. */",
       "strokeWidth?": "/** The width in pixels of the marker stroke. If this is not specified, the markers will take their stroke width from the series. */",
-      "fillOpacity?": "/** */",
-      "strokeOpacity?": "/** */"
+      "strokeOpacity?": "/** Opacity of the marker strokes. */"
     }
   },
   "AgAreaSeriesMarker": {
@@ -1201,9 +1344,9 @@
       "size?": "PixelSize",
       "maxSize?": "PixelSize",
       "fill?": "CssColor",
+      "fillOpacity?": "Opacity",
       "stroke?": "CssColor",
       "strokeWidth?": "PixelSize",
-      "fillOpacity?": "Opacity",
       "strokeOpacity?": "Opacity"
     },
     "docs": {
@@ -1213,10 +1356,10 @@
       "size?": "/** The size in pixels of the markers. */",
       "maxSize?": "/** For series where the size of the marker is determined by the data, this determines the largest size a marker can be in pixels. */",
       "fill?": "/** The colour to use for marker fills. If this is not specified, the markers will take their fill from the series. */",
+      "fillOpacity?": "/** Opacity of the marker fills. */",
       "stroke?": "/** The colour to use for marker strokes. If this is not specified, the markers will take their stroke from the series. */",
       "strokeWidth?": "/** The width in pixels of the marker stroke. If this is not specified, the markers will take their stroke width from the series. */",
-      "fillOpacity?": "/** */",
-      "strokeOpacity?": "/** */"
+      "strokeOpacity?": "/** Opacity of the marker strokes. */"
     }
   },
   "AgSeriesTooltip": {
@@ -1334,11 +1477,40 @@
       "color?": "/** The colour to use for the labels. */"
     }
   },
+  "AgScatterSeriesMarker": {
+    "meta": {},
+    "type": {
+      "domain?": "[number, number]",
+      "formatter?": "AgCartesianSeriesMarkerFormatter",
+      "enabled?": "boolean",
+      "shape?": "MarkerShape",
+      "size?": "PixelSize",
+      "maxSize?": "PixelSize",
+      "fill?": "CssColor",
+      "fillOpacity?": "Opacity",
+      "stroke?": "CssColor",
+      "strokeWidth?": "PixelSize",
+      "strokeOpacity?": "Opacity"
+    },
+    "docs": {
+      "domain?": "/** If sizeKey is used, explicitly specifies the extent of the domain of it's values. */",
+      "formatter?": "/** Function used to return formatting for individual markers, based on the supplied information. If the current marker is highlighted, the `highlighted` property will be set to `true`; make sure to check this if you want to differentiate between the highlighted and un-highlighted states. */",
+      "enabled?": "/** Whether or not to show markers. */",
+      "shape?": "/** The shape to use for the markers. You can also supply a custom marker by providing a `Marker` subclass. */",
+      "size?": "/** The size in pixels of the markers. */",
+      "maxSize?": "/** For series where the size of the marker is determined by the data, this determines the largest size a marker can be in pixels. */",
+      "fill?": "/** The colour to use for marker fills. If this is not specified, the markers will take their fill from the series. */",
+      "fillOpacity?": "/** Opacity of the marker fills. */",
+      "stroke?": "/** The colour to use for marker strokes. If this is not specified, the markers will take their stroke from the series. */",
+      "strokeWidth?": "/** The width in pixels of the marker stroke. If this is not specified, the markers will take their stroke width from the series. */",
+      "strokeOpacity?": "/** Opacity of the marker strokes. */"
+    }
+  },
   "AgScatterSeriesOptions": {
     "meta": { "doc": "/** Configuration for scatter/bubble series. */" },
     "type": {
       "type?": "'scatter'",
-      "marker?": "AgCartesianSeriesMarker",
+      "marker?": "AgScatterSeriesMarker",
       "label?": "AgScatterSeriesLabelOptions",
       "xKey?": "string",
       "yKey?": "string",
@@ -1746,7 +1918,6 @@
     "type": {
       "showInLegend?": "boolean",
       "enabled?": "boolean",
-      "padding?": "AgChartPaddingOptions",
       "text?": "string",
       "fontStyle?": "FontStyle",
       "fontWeight?": "FontWeight",
@@ -1800,6 +1971,8 @@
       "rotation?": "number",
       "outerRadiusOffset?": "PixelSize",
       "innerRadiusOffset?": "PixelSize",
+      "radiusMin?": "number",
+      "radiusMax?": "number",
       "shadow?": "AgDropShadowOptions",
       "tooltip?": "AgPieSeriesTooltip",
       "formatter?": "(params: AgPieSeriesFormatterParams) => AgPieSeriesFormat",
@@ -1830,6 +2003,8 @@
       "rotation?": "/** The rotation of the pie series in degrees. */",
       "outerRadiusOffset?": "/** The offset in pixels of the outer radius of the series. Used to construct doughnut charts. */",
       "innerRadiusOffset?": "/** The offset in pixels of the inner radius of the series. Used to construct doughnut charts. If this is not given, or a value of zero is given, a pie chart will be rendered. */",
+      "radiusMin?": "/** Override of the automatically determined minimum radiusKey value from the data. */",
+      "radiusMax?": "/** Override of the automatically determined maximum radiusKey value from the data. */",
       "shadow?": "/** Configuration for the shadow used behind the chart series. */",
       "tooltip?": "/** Series-specific tooltip configuration. */",
       "data?": "/** The data to use when rendering the series. If this is not supplied, data must be set on the chart instead. */",
@@ -2114,12 +2289,16 @@
     "type": "T extends GroupedCategoryChart ? AgCartesianChartOptions : T extends CartesianChart ? AgCartesianChartOptions : T extends PolarChart ? AgPolarChartOptions : T extends HierarchyChart ? AgHierarchyChartOptions : never"
   },
   "SeriesOptionType": {
-    "meta": { "isTypeAlias": true },
-    "type": "NonNullable<SeriesOptions['type']>"
+    "meta": { "isTypeAlias": true, "typeParams": ["T extends Series"] },
+    "type": "T extends LineSeries ? AgLineSeriesOptions : T extends BarSeries ? AgBarSeriesOptions : T extends AreaSeries ? AgAreaSeriesOptions : T extends ScatterSeries ? AgScatterSeriesOptions : T extends HistogramSeries ? AgHistogramSeriesOptions : T extends PieSeries ? AgPieSeriesOptions : T extends TreemapSeries ? AgTreemapSeriesOptions : never"
   },
   "AxisOptionType": {
     "meta": { "isTypeAlias": true, "typeParams": ["T extends Axis<any, any>"] },
     "type": "T extends LogAxis ? AgLogAxisOptions : T extends NumberAxis ? AgNumberAxisOptions : T extends CategoryAxis ? AgCategoryAxisOptions : T extends GroupedCategoryAxis ? AgGroupedCategoryAxisOptions : T extends TimeAxis ? AgTimeAxisOptions : never"
+  },
+  "ObservableLike": {
+    "meta": { "isTypeAlias": true },
+    "type": "{ addEventListener(key: string, cb: SourceEventListener<any>): void; clearEventListeners(): void; }"
   },
   "ChartClickEvent": {
     "meta": {},
@@ -2150,10 +2329,6 @@
     ],
     "docs": [null, null, null, null, null, null]
   },
-  "Point": {
-    "meta": { "isTypeAlias": true },
-    "type": "{ x: number; y: number; }"
-  },
   "ChartAxisDirection": {
     "meta": { "isEnum": true },
     "type": ["X = 'x'", "Y = 'y'"],
@@ -2179,6 +2354,36 @@
       "boundSeries": "Series[]"
     }
   },
+  "CrossLinePathData": { "meta": {}, "type": { "points": "Point[]" } },
+  "CrossLineType": {
+    "meta": { "isTypeAlias": true },
+    "type": "\"line\" | \"range\""
+  },
+  "CrossLineLabelPosition": {
+    "meta": { "isTypeAlias": true },
+    "type": "'top' | 'left' | 'right' | 'bottom' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight' | 'inside' | 'insideLeft' | 'insideRight' | 'insideTop' | 'insideBottom' | 'insideTopLeft' | 'insideBottomLeft' | 'insideTopRight' | 'insideBottomRight'"
+  },
+  "Point": { "meta": {}, "type": { "x": "number", "y": "number" } },
+  "CoordinatesFnOpts": {
+    "meta": { "isTypeAlias": true },
+    "type": "{ yDirection: boolean; xStart: number; xEnd: number; yStart: number; yEnd: number; }"
+  },
+  "CoordinatesFn": {
+    "meta": { "isTypeAlias": true },
+    "type": "({ yDirection, xStart, xEnd, yStart, yEnd }: CoordinatesFnOpts) => Point"
+  },
+  "PositionCalcFns": {
+    "meta": { "isTypeAlias": true },
+    "type": "{ c: CoordinatesFn; }"
+  },
+  "LabelTranslationDirection": {
+    "meta": { "isTypeAlias": true },
+    "type": "1 | -1 | 0"
+  },
+  "CrossLineTranslationDirection": {
+    "meta": { "isTypeAlias": true },
+    "type": "{ xTranslationDirection: LabelTranslationDirection; yTranslationDirection: LabelTranslationDirection; }"
+  },
   "GroupedCategoryChartAxis": {
     "meta": { "isTypeAlias": true },
     "type": "GroupedCategoryAxis | ChartAxis"
@@ -2191,16 +2396,6 @@
       "enabled": "boolean",
       "marker": "{ shape?: string | (new () => Marker); fill: string; stroke: string; fillOpacity: number; strokeOpacity: number; }",
       "label": "{ text: string; }"
-    }
-  },
-  "LegendClickEvent": {
-    "meta": {},
-    "type": {
-      "event": "MouseEvent",
-      "itemId": "string",
-      "enabled": "boolean",
-      "source": "Legend",
-      "type": "string"
     }
   },
   "LegendOrientation": {
@@ -2237,6 +2432,15 @@
   "SeriesOptions": {
     "meta": { "isTypeAlias": true },
     "type": "AgCartesianSeriesOptions | AgPolarSeriesOptions | AgHierarchySeriesOptions"
+  },
+  "ReduceConfig": {
+    "meta": { "typeParams": ["T"] },
+    "type": {
+      "outputProp": "string",
+      "reducer": "(r: T, n: any, idx: number, length: number) => T",
+      "start": "T",
+      "seriesType?": "string[]"
+    }
   },
   "ThemeMap": {
     "meta": { "isTypeAlias": true },
@@ -2300,7 +2504,7 @@
       "stroke?": "string",
       "yKey": "string",
       "yValue": "number",
-      "series": "Series",
+      "series": "Series<any>",
       "itemId?": "any",
       "datum": "any",
       "point?": "{ readonly x: number; readonly y: number; }"
@@ -2326,6 +2530,15 @@
   "ProcessedXDatum": {
     "meta": { "isTypeAlias": true },
     "type": "{ xDatum: any; seriesDatum: any; }"
+  },
+  "AreaSeriesTag": {
+    "meta": { "isEnum": true },
+    "type": ["Fill", "Stroke", "Marker", "Label"],
+    "docs": [null, null, null, null]
+  },
+  "AreaSeriesNodeDataContext": {
+    "meta": { "isTypeAlias": true },
+    "type": "SeriesNodeDataContext<MarkerSelectionDatum, LabelSelectionDatum> & { fillSelectionData: FillSelectionDatum; strokeSelectionData: StrokeSelectionDatum; }"
   },
   "BarSeriesNodeClickEvent": {
     "meta": {},
@@ -2365,9 +2578,10 @@
       "height": "number",
       "fill?": "string",
       "stroke?": "string",
+      "colorIndex": "number",
       "strokeWidth": "number",
       "label?": "{ readonly x: number; readonly y: number; readonly text: string; readonly fontStyle?: FontStyle; readonly fontWeight?: FontWeight; readonly fontSize: number; readonly fontFamily: string; readonly textAlign: CanvasTextAlign; readonly textBaseline: CanvasTextBaseline; readonly fill: string; }",
-      "series": "Series",
+      "series": "Series<any>",
       "itemId?": "any",
       "datum": "any",
       "point?": "{ readonly x: number; readonly y: number; }"
@@ -2398,6 +2612,56 @@
   "BarSeriesFormat": {
     "meta": {},
     "type": { "fill?": "string", "stroke?": "string", "strokeWidth?": "number" }
+  },
+  "NodeDataSelection": {
+    "meta": {
+      "isTypeAlias": true,
+      "typeParams": [
+        "N extends Node",
+        "ContextType extends SeriesNodeDataContext"
+      ]
+    },
+    "type": "Selection<N, Group, ContextType['nodeData'][number], any>"
+  },
+  "LabelDataSelection": {
+    "meta": {
+      "isTypeAlias": true,
+      "typeParams": [
+        "N extends Node",
+        "ContextType extends SeriesNodeDataContext"
+      ]
+    },
+    "type": "Selection<N, Group, ContextType['labelData'][number], any>"
+  },
+  "SubGroup": {
+    "meta": {
+      "typeParams": [
+        "C extends SeriesNodeDataContext",
+        "SceneNodeType extends Node"
+      ]
+    },
+    "type": {
+      "paths": "Path[]",
+      "group": "Group",
+      "pickGroup": "Group",
+      "markerGroup?": "Group",
+      "datumSelection": "NodeDataSelection<SceneNodeType, C>",
+      "labelSelection": "LabelDataSelection<Text, C>",
+      "markerSelection?": "NodeDataSelection<Marker, C>"
+    }
+  },
+  "PickGroupInclude": {
+    "meta": { "isTypeAlias": true },
+    "type": "'mainPath' | 'datumNodes' | 'markers'"
+  },
+  "SeriesFeature": { "meta": { "isTypeAlias": true }, "type": "'markers'" },
+  "SeriesOpts": {
+    "meta": {},
+    "type": {
+      "pickGroupIncludes": "PickGroupInclude[]",
+      "pathsPerSeries": "number",
+      "features": "SeriesFeature[]"
+    }
   },
   "CartesianSeriesMarkerFormat": {
     "meta": {},
@@ -2437,7 +2701,7 @@
       "stroke?": "string",
       "strokeWidth": "number",
       "label?": "{ readonly text: string; readonly x: number; readonly y: number; readonly fontStyle?: FontStyle; readonly fontWeight?: FontWeight; readonly fontSize: number; readonly fontFamily: string; readonly fill: string; }",
-      "series": "Series",
+      "series": "Series<any>",
       "itemId?": "any",
       "datum": "any",
       "point?": "{ readonly x: number; readonly y: number; }"
@@ -2464,9 +2728,9 @@
   "LineNodeDatum": {
     "meta": {},
     "type": {
-      "point": "{ readonly x: number; readonly y: number; }",
+      "point": "{ readonly moveTo: boolean; readonly x: number; readonly y: number; }",
       "label?": "{ readonly text: string; readonly fontStyle?: FontStyle; readonly fontWeight?: FontWeight; readonly fontSize: number; readonly fontFamily: string; readonly textAlign: CanvasTextAlign; readonly textBaseline: CanvasTextBaseline; readonly fill: string; }",
-      "series": "Series",
+      "series": "Series<any>",
       "itemId?": "any",
       "datum": "any",
       "point?": "{ readonly x: number; readonly y: number; }"
@@ -2483,13 +2747,21 @@
       "yKey": "string"
     }
   },
+  "LineTooltipRendererParams": {
+    "meta": { "isTypeAlias": true },
+    "type": "CartesianTooltipRendererParams"
+  },
+  "LineContext": {
+    "meta": { "isTypeAlias": true },
+    "type": "SeriesNodeDataContext<LineNodeDatum>"
+  },
   "ScatterNodeDatum": {
     "meta": {},
     "type": {
       "point": "{ readonly x: number; readonly y: number; }",
       "size": "number",
       "label": "MeasuredLabel",
-      "series": "Series",
+      "series": "Series<any>",
       "itemId?": "any",
       "datum": "any",
       "point?": "{ readonly x: number; readonly y: number; }"
@@ -2536,11 +2808,11 @@
       "y0": "number",
       "y1": "number",
       "depth": "number",
-      "series": "TreemapSeries",
       "fill": "string",
       "label": "string",
       "hasTitle": "boolean",
       "colorValue": "number",
+      "series": "Series<any>",
       "itemId?": "any",
       "datum": "any",
       "point?": "{ readonly x: number; readonly y: number; }"
@@ -2597,7 +2869,7 @@
       "midCos": "number",
       "midSin": "number",
       "label?": "{ readonly text: string; readonly textAlign: CanvasTextAlign; readonly textBaseline: CanvasTextBaseline; }",
-      "series": "Series",
+      "series": "Series<any>",
       "itemId?": "any",
       "datum": "any",
       "point?": "{ readonly x: number; readonly y: number; }"
@@ -2658,7 +2930,7 @@
       "doc": "/** Processed series datum used in node selections,\n * contains information used to render pie sectors, bars, markers, etc. */"
     },
     "type": {
-      "series": "Series",
+      "series": "Series<any>",
       "itemId?": "any",
       "datum": "any",
       "point?": "{ readonly x: number; readonly y: number; }"
@@ -2696,6 +2968,13 @@
       "color?": "string"
     }
   },
+  "SeriesNodeDataContext": {
+    "meta": {
+      "isTypeAlias": true,
+      "typeParams": ["S = SeriesNodeDatum", "L = S"]
+    },
+    "type": "{ itemId: string; nodeData: S[]; labelData: L[]; }"
+  },
   "SeriesMarkerFormatterParams": {
     "meta": {},
     "type": {
@@ -2705,6 +2984,22 @@
       "strokeWidth": "number",
       "size": "number",
       "highlighted": "boolean"
+    }
+  },
+  "TestCase": {
+    "meta": {},
+    "type": {
+      "options": "AgChartOptions",
+      "assertions": "(chart: Chart) => Promise<void>",
+      "extraScreenshotActions?": "(chart: Chart) => Promise<void>"
+    }
+  },
+  "CartesianTestCase": {
+    "meta": {},
+    "type": {
+      "options": "AgCartesianChartOptions",
+      "assertions": "(chart: Chart) => Promise<void>",
+      "extraScreenshotActions?": "(chart: Chart) => Promise<void>"
     }
   },
   "ChartThemeDefaults": {
@@ -2755,6 +3050,11 @@
     "meta": { "isTypeAlias": true, "typeParams": ["T"] },
     "type": "(v: T) => number"
   },
+  "RedrawType": {
+    "meta": { "isEnum": true },
+    "type": ["NONE", "TRIVIAL", "MINOR", "MAJOR"],
+    "docs": [null, null, null, null]
+  },
   "GradientColorStop": {
     "meta": {},
     "type": { "offset": "number", "color": "string" }
@@ -2764,17 +3064,33 @@
     "type": ["All", "None"],
     "docs": [null, null]
   },
-  "RedrawType": {
-    "meta": { "isEnum": true },
-    "type": ["NONE", "TRIVIAL", "MINOR", "MAJOR"],
-    "docs": [null, null, null, null]
+  "RenderContext": {
+    "meta": { "isTypeAlias": true },
+    "type": "{ ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D; forceRender: boolean; resized: boolean; clipBBox?: BBox; stats?: { nodesRendered: number; nodesSkipped: number; layersRendered: number; layersSkipped: number; }; }"
   },
   "DebugOptions": {
     "meta": {},
     "type": {
-      "renderFrameIndex": "boolean",
+      "stats": "false | 'basic' | 'detailed'",
+      "dirtyTree": "boolean",
       "renderBoundingBoxes": "boolean",
       "consoleLog": "boolean"
+    }
+  },
+  "SceneOptions": {
+    "meta": {},
+    "type": {
+      "document": "Document",
+      "mode": "'simple' | 'composite' | 'dom-composite' | 'adv-composite'"
+    }
+  },
+  "SceneLayer": {
+    "meta": {},
+    "type": {
+      "id": "number",
+      "name?": "string",
+      "zIndex": "number",
+      "canvas": "HdpiOffscreenCanvas | HdpiCanvas"
     }
   },
   "ValueFn": {
@@ -2840,11 +3156,12 @@
     "type": { "text": "string", "width": "number", "height": "number" }
   },
   "PlacedLabel": {
-    "meta": {},
+    "meta": { "typeParams": ["PLD = PointLabelDatum"] },
     "type": {
       "index": "number",
       "x": "number",
       "y": "number",
+      "datum": "PLD",
       "text": "string",
       "width": "number",
       "height": "number"
@@ -2937,6 +3254,10 @@
   "PropertyChangeEventListener": {
     "meta": { "isTypeAlias": true, "typeParams": ["S", "V"] },
     "type": "(event: PropertyChangeEvent<S, V>) => any"
+  },
+  "Callback": {
+    "meta": { "isTypeAlias": true },
+    "type": "(params: { count: number; }) => void"
   },
   "OnSizeChange": {
     "meta": { "isTypeAlias": true },

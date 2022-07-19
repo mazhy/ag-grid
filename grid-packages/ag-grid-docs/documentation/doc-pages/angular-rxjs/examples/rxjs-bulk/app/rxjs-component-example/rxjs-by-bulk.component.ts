@@ -1,5 +1,5 @@
-import "@ag-grid-community/core/dist/styles/ag-grid.css";
-import "@ag-grid-community/core/dist/styles/ag-theme-alpine.css";
+import "@ag-grid-community/styles/ag-grid.css";
+import "@ag-grid-community/styles/ag-theme-alpine.css";
 import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model";
 import { ColDef, GridOptions, ModuleRegistry, ValueFormatterParams } from "@ag-grid-community/core";
 import { Component } from "@angular/core";
@@ -9,7 +9,10 @@ import { Observable } from "rxjs";
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 @Component({
     selector: 'my-app',
-    templateUrl: './rxjs-by-bulk.component.html',
+    template: `
+    <h2>Full Data Set With Updates Within Supplied</h2>
+    <ag-grid-angular style="width: 100%; height: 330px;" class="ag-theme-alpine" [gridOptions]="gridOptions">
+    </ag-grid-angular>`,
     providers: [MockServerService]
 })
 export class RxJsComponentByFullSet {

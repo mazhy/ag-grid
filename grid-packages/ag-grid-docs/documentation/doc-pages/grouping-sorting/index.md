@@ -7,7 +7,7 @@ This section provides details on how to configure and customise how row groups a
 
 ## Enabling Group Sorting
 
-When using [Single Group Column](../grouping-single-group-column/) or [Multiple Group Columns](../grouping-multiple-group-columns/), sorting can be enabled through the `sortable` column property as shown below:    
+When using [Single Group Column](../grouping-single-group-column/) or [Multiple Group Columns](../grouping-multiple-group-columns/), sorting can be enabled through the `sortable` column property as shown below:  
 
 <snippet>
 const gridOptions = { 
@@ -48,14 +48,44 @@ const gridOptions = {
 };
 </snippet>
 
-[[note]]
-| When using the [Group Rows Display Type](../grouping-group-rows/) there are no group columns to sort by, however row 
-| groups can still be ordered through the [Default Group Order](../grouping-group-order/#default-group-order). 
-
 The example below demonstrates how sorting is enabled with [Multiple Group Columns](../grouping-multiple-group-columns/). 
 Note that sorting is enabled across all columns, including Row Group Columns, using: `defaultColDef.sortable = true`.
 
 <grid-example title='Enabling Group Sorting' name='enabling-group-sorting' type='generated' options='{ "enterprise": true, "exampleHeight": 540, "modules": ["clientside", "rowgrouping"] }'></grid-example>
+
+## Mixed Group Sorting
+
+By default, columns only apply sorting to their leaf level row data, as such to sort row groups you should apply the sort to the column on which the grouping has been applied.
+
+This creates the side effect that groups can be sorted in multiple directions simultaneously, the group column reflects this by displaying the multi-sort icon when it does not match one or more of the provided columns sort direction.
+
+<snippet>
+const gridOptions = {
+    columnDefs: [
+        {
+            field: 'year',
+            rowGroup: true,
+            sortable: true,
+            sort: 'desc',
+        },
+        {
+            field: 'handset',
+            rowGroup: true,
+            sortable: true,
+            sort: 'asc',
+        },
+    ],
+}
+</snippet>
+
+In this snippet, sorting on the year or handset column will sort their respective row groups. As the year and handset column have different sorts applied to them, the group column displays the mixed sort icon.
+
+The following example demonstrates mixed group sorting. Note the following:
+
+- Click the header of the group column to apply a sort, observe how it forces the year and handset columns sort to match.
+- Hold shift and click the header of the year column, observe how the sort direction is now different from the auto column, and the auto column now displays the mixed-sort icon.
+
+<grid-example title='Mixed Group Sort' name='mixed-group-sort' type='generated' options='{ "enterprise": true, "exampleHeight": 515, "modules": ["clientside", "rowgrouping", "menu", "columnpanel", "setfilter"] }'></grid-example>
 
 ## Custom Group Sorting
 
@@ -86,7 +116,6 @@ As `rowGroup = true` is defined on this column, the supplied `comparator` will b
 the Group Column.
 
 The following example demonstrates custom group sorting. Note the following:
-
 - The `month` column has a custom sort `comparator` supplied which sorts months in chronological order.
 - The 'Group' Column uses the `comparator` defined on the `month` column definition to sort the row groups. 
 
@@ -94,7 +123,7 @@ The following example demonstrates custom group sorting. Note the following:
 
 [[note]]
 | It is also possible to define a comparator that will be used across all group levels using; `autoGroupColumnDef.comparator`.
-| This 'shared group comparator' will take precedence over any comparators defined on the underlying columns.
+| This 'shared group comparator' will override over any comparators defined on the underlying columns.
 
 ## Maintain Group Order
 
@@ -128,4 +157,4 @@ The following example demonstrates how `groupMaintainOrder` works. Note the foll
 
 ## Next Up
 
-Continue to the next section to learn about [Row Group Filtering](../grouping-filtering/).
+Continue to the next section to learn about [Filtering Groups](../grouping-filtering/).

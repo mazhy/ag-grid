@@ -39,6 +39,9 @@ export type Opacity = number;
 /** Alias to denote that a value is a measurement in pixels. */
 export type PixelSize = number;
 
+/** Alias to denote that a value is a data value. */
+export type DataValue = any;
+
 export interface AgChartThemePalette {
     /** The array of fills to be used. */
     fills: string[];
@@ -93,16 +96,17 @@ export interface AgChartThemeOverrides {
     common?: any;
 }
 
+type AgCartesianAxisThemeSpecialOptions = 'position' | 'type' | 'crossLines';
 /** This is the configuration shared by all types of axis. */
 export interface AgCartesianAxisThemeOptions<T> {
     /** An object with axis theme overrides for the `top` positioned axes. Same configs apply here as one level above. For example, to rotate labels by 45 degrees in 'top' positioned axes one can use `top: { label: { rotation: 45 } } }`. */
-    top?: Omit<T, 'position' | 'type'>;
+    top?: Omit<T, AgCartesianAxisThemeSpecialOptions>;
     /** An object with axis theme overrides for the `right` positioned axes. Same configs apply here as one level above. */
-    right?: Omit<T, 'position' | 'type'>;
+    right?: Omit<T, AgCartesianAxisThemeSpecialOptions>;
     /** An object with axis theme overrides for the `bottom` positioned axes. Same configs apply here as one level above. */
-    bottom?: Omit<T, 'position' | 'type'>;
+    bottom?: Omit<T, AgCartesianAxisThemeSpecialOptions>;
     /** An object with axis theme overrides for the `left` positioned axes. Same configs apply here as one level above. */
-    left?: Omit<T, 'position' | 'type'>;
+    left?: Omit<T, AgCartesianAxisThemeSpecialOptions>;
 }
 
 export interface AgCartesianThemeOptions<S = AgCartesianSeriesTheme> extends AgBaseChartOptions {
@@ -124,21 +128,27 @@ export interface AgHierarchyThemeOptions<S = AgHierarchySeriesTheme> extends AgB
     series?: S;
 }
 
+export interface AgCrossLineThemeOptions extends Omit<AgCrossLineOptions, 'type'> { }
+
+export interface AgCartesianAxesCrossLineThemeOptions {
+    crossLines?: AgCrossLineThemeOptions;
+}
+
 export interface AgNumberAxisThemeOptions
-    extends Omit<AgNumberAxisOptions, 'type'>,
-        AgCartesianAxisThemeOptions<AgNumberAxisOptions> {}
+    extends Omit<AgNumberAxisOptions, 'type' | 'crossLines'>,
+    AgCartesianAxisThemeOptions<AgNumberAxisOptions>, AgCartesianAxesCrossLineThemeOptions { }
 export interface AgLogAxisThemeOptions
-    extends Omit<AgLogAxisOptions, 'type'>,
-        AgCartesianAxisThemeOptions<AgLogAxisOptions> {}
+    extends Omit<AgLogAxisOptions, 'type' | 'crossLines'>,
+    AgCartesianAxisThemeOptions<AgLogAxisOptions>, AgCartesianAxesCrossLineThemeOptions { }
 export interface AgCategoryAxisThemeOptions
-    extends Omit<AgCategoryAxisOptions, 'type'>,
-        AgCartesianAxisThemeOptions<AgCategoryAxisOptions> {}
+    extends Omit<AgCategoryAxisOptions, 'type' | 'crossLines'>,
+    AgCartesianAxisThemeOptions<AgCategoryAxisOptions>, AgCartesianAxesCrossLineThemeOptions { }
 export interface AgGroupedCategoryAxisThemeOptions
-    extends Omit<AgGroupedCategoryAxisOptions, 'type'>,
-        AgCartesianAxisThemeOptions<AgGroupedCategoryAxisOptions> {}
+    extends Omit<AgGroupedCategoryAxisOptions, 'type' | 'crossLines'>,
+    AgCartesianAxisThemeOptions<AgGroupedCategoryAxisOptions>, AgCartesianAxesCrossLineThemeOptions { }
 export interface AgTimeAxisThemeOptions
-    extends Omit<AgTimeAxisOptions, 'type'>,
-        AgCartesianAxisThemeOptions<AgTimeAxisOptions> {}
+    extends Omit<AgTimeAxisOptions, 'type' | 'crossLines'>,
+    AgCartesianAxisThemeOptions<AgTimeAxisOptions>, AgCartesianAxesCrossLineThemeOptions { }
 
 export interface AgCartesianAxesTheme {
     /** This extends the common axis configuration with options specific to number axes. */
@@ -212,7 +222,6 @@ export interface AgDropShadowOptions {
 export interface AgChartCaptionOptions {
     /** Whether or not the title should be shown. */
     enabled?: boolean;
-    padding?: AgChartPaddingOptions;
     /** The text to show in the title. */
     text?: string;
     /** The font style to use for the title. */
@@ -288,6 +297,8 @@ export interface AgChartLegendMarkerOptions {
 }
 
 export interface AgChartLegendLabelOptions {
+    /** If the label text exceeds the maximum length, it will be truncated and an ellipsis will be appended to indicate this. */
+    maxLength?: number;
     /** The colour of the text. */
     color?: CssColor;
     /** The font style to use for the legend. */
@@ -307,10 +318,24 @@ export interface AgChartLegendItemOptions {
     marker?: AgChartLegendMarkerOptions;
     /** Configuration for the legend labels. */
     label?: AgChartLegendLabelOptions;
+    /** Used to constrain the width of legend items. */
+    maxWidth?: PixelSize;
     /** The horizontal spacing in pixels to use between legend items. */
     paddingX?: PixelSize;
     /** The vertical spacing in pixels to use between legend items. */
     paddingY?: PixelSize;
+}
+
+export interface AgChartLegendClickEvent {
+    /** Legend item id - based on series id. */
+    itemId: string;
+    /** Whether the legend item is currently enabled or not. */
+    enabled: boolean;
+}
+
+export interface AgChartLegendListeners {
+    /** The listener to call when a legend item is clicked. */
+    legendItemClick?: (event: AgChartLegendClickEvent) => void;
 }
 
 export interface AgChartLegendOptions {
@@ -322,6 +347,8 @@ export interface AgChartLegendOptions {
     spacing?: PixelSize;
     /** Configuration for the legend items that consist of a marker and a label. */
     item?: AgChartLegendItemOptions;
+    /** Optional callbacks for specific legend-related events. */
+    listeners?: AgChartLegendListeners;
 }
 
 export interface AgChartTooltipOptions {
@@ -344,13 +371,13 @@ export interface AgChartBackground {
 
 export interface AgBaseChartListeners {
     /** The listener to call when a node (marker, column, bar, tile or a pie slice) in any series is clicked. In case a chart has multiple series, the chart's `seriesNodeClick` event can be used to listen to `nodeClick` events of all the series at once. */
-    seriesNodeClick: (
+    seriesNodeClick: (event: {
         type: 'seriesNodeClick',
         series: any,
         datum: any,
         xKey: string,
         yKey: string,
-    ) => any;
+    }) => any;
     /** Generic listeners. */
     [key: string]: Function;
 }
@@ -410,12 +437,18 @@ export interface AgAxisBaseTickOptions {
 }
 
 export interface AgAxisNumberTickOptions extends AgAxisBaseTickOptions {
-    /** A hint of how many ticks to use across an axis. The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given. */
+    /** A hint of how many ticks to use across an axis.
+     * The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given.
+     */
     count?: number;
 }
 
 export interface AgAxisTimeTickOptions extends AgAxisBaseTickOptions {
-    /** A hint of how many ticks to use across an axis. The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given.<br/><br/>The following intervals from the `agCharts.time` namespace can be used: `millisecond, second, minute, hour, day, sunday, monday, tuesday, wednesday, thursday, friday, saturday, month, year, utcMinute, utcHour, utcDay, utcMonth, utcYear`. And derived intervals can be created by using the `every` method on the default ones. For example, `agCharts.time.month.every(2)` will return a derived interval that will make the axis place ticks for every other month.<br/><br/> */
+    /** A hint of how many ticks to use across an axis.
+     * The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given.
+     * The following intervals from the `agCharts.time` namespace can be used:
+     * `millisecond, second, minute, hour, day, sunday, monday, tuesday, wednesday, thursday, friday, saturday, month, year, utcMinute, utcHour, utcDay, utcMonth, utcYear`.
+     * Derived intervals can be created by using the `every` method on the default ones. For example, `agCharts.time.month.every(2)` will return a derived interval that will make the axis place ticks for every other month. */
     count?: any;
 }
 export interface AgAxisLabelFormatterParams {
@@ -449,7 +482,7 @@ export interface AgAxisLabelOptions {
     /** Format string used when rendering labels for time axes. */
     format?: string;
     /** Function used to render axis labels. If `value` is a number, `fractionDigits` will also be provided, which indicates the number of fractional digits used in the step between ticks; for example, a tick step of `0.0005` would have `fractionDigits` set to `4` */
-    formatter?: (params: AgAxisLabelFormatterParams) => string;
+    formatter?: (params: AgAxisLabelFormatterParams) => string | undefined;
 }
 
 export interface AgAxisGridStyle {
@@ -473,7 +506,76 @@ export interface AgBaseCartesianAxisOptions extends AgBaseAxisOptions {
     label?: AgAxisLabelOptions;
     /** Configuration of the lines used to form the grid in the chart area. */
     gridStyle?: AgAxisGridStyle[];
+    /** Add cross lines or regions corresponding to data values. */
+    crossLines?: AgCrossLineOptions[];
 }
+
+export interface AgCrossLineOptions {
+    /** Whether or not to show the cross line. */
+    enabled?: boolean;
+    /** Type of cross line to render. */
+    type: 'line' | 'range';
+    /** The data value at which the line should be positioned. This property is used if the crossLine type is `line`. */
+    value?: DataValue;
+    /** The range of values from the data used to display lines at a desired chart region. This property is only used for crossLine type `range`. */
+    range?: [DataValue, DataValue];
+    /** The colour to use for the fill of the range. */
+    fill?: CssColor;
+    /** The opacity of the fill for the range. */
+    fillOpacity?: Opacity;
+    /** The colour of the stroke for the lines. */
+    stroke?: CssColor;
+    /** The width in pixels of the stroke for the lines. */
+    strokeWidth?: PixelSize;
+    /** The opacity of the stroke for the lines. */
+    strokeOpacity?: Opacity;
+    /** Defines how the line stroke is rendered. Every number in the array specifies the length in pixels of alternating dashes and gaps. For example, `[6, 3]` means dashes with a length of `6` pixels with gaps between of `3` pixels. */
+    lineDash?: PixelSize[];
+    /** Configuration for the crossLine label. */
+    label?: AgCrossLineLabelOptions;
+}
+
+export interface AgCrossLineLabelOptions {
+    /** Whether or not to show the cross line label. */
+    enabled?: boolean;
+    /** The text to show in the label. */
+    text?: string;
+    /** The font style to use for the label. */
+    fontStyle?: FontStyle;
+    /** The font weight to use for the label. */
+    fontWeight?: FontWeight;
+    /** The font size in pixels to use for the label. */
+    fontSize?: FontSize;
+    /** The font family to use for the label. */
+    fontFamily?: FontFamily;
+    /** Padding in pixels between the label and the edge of the crossLine. */
+    padding?: PixelSize;
+    /** The colour to use for the label. */
+    color?: CssColor;
+    /** The position of the crossLine label. */
+    position?: AgCrossLineLabelPosition;
+    /** The rotation of the crossLine label in degrees. */
+    rotation?: number;
+}
+
+export type AgCrossLineLabelPosition =
+    'top'
+    | 'left'
+    | 'right'
+    | 'bottom'
+    | 'topLeft'
+    | 'topRight'
+    | 'bottomLeft'
+    | 'bottomRight'
+    | 'inside'
+    | 'insideLeft'
+    | 'insideRight'
+    | 'insideTop'
+    | 'insideBottom'
+    | 'insideTopLeft'
+    | 'insideBottomLeft'
+    | 'insideTopRight'
+    | 'insideBottomRight';
 
 export interface AgNumberAxisOptions extends AgBaseCartesianAxisOptions {
     type: 'number';
@@ -595,7 +697,7 @@ export interface AgBaseSeriesOptions {
     /** The cursor to use for hovered area markers. This config is identical to the CSS `cursor` property. */
     cursor?: string;
     /** A map of event names to event listeners. */
-    listeners?: AgBaseSeriesListeners | {[key: string]: Function};
+    listeners?: AgBaseSeriesListeners | { [key: string]: Function };
     /** Configuration for series markers and series line highlighting when a marker / data point or a legend item is hovered over. */
     highlightStyle?: AgSeriesHighlightStyle;
 }
@@ -650,13 +752,13 @@ export interface AgSeriesMarker {
     maxSize?: PixelSize;
     /** The colour to use for marker fills. If this is not specified, the markers will take their fill from the series. */
     fill?: CssColor;
+    /** Opacity of the marker fills. */
+    fillOpacity?: Opacity;
     /** The colour to use for marker strokes. If this is not specified, the markers will take their stroke from the series. */
     stroke?: CssColor;
     /** The width in pixels of the marker stroke. If this is not specified, the markers will take their stroke width from the series. */
     strokeWidth?: PixelSize;
-    /**  */
-    fillOpacity?: Opacity;
-    /**  */
+    /** Opacity of the marker strokes. */
     strokeOpacity?: Opacity;
 }
 
@@ -690,7 +792,7 @@ export interface AgCartesianSeriesMarker extends AgSeriesMarker {
     formatter?: AgCartesianSeriesMarkerFormatter;
 }
 
-export interface AgAreaSeriesMarker extends AgCartesianSeriesMarker {}
+export interface AgAreaSeriesMarker extends AgCartesianSeriesMarker { }
 
 export interface AgSeriesTooltip {
     /** Whether or not to show tooltips when the series are hovered over. */
@@ -743,14 +845,18 @@ export interface AgScatterSeriesTooltip extends AgSeriesTooltip {
     renderer?: (params: AgScatterSeriesTooltipRendererParams) => string | AgTooltipRendererResult;
 }
 
-export interface AgScatterSeriesLabelOptions extends AgChartLabelOptions {}
+export interface AgScatterSeriesLabelOptions extends AgChartLabelOptions { }
 
+export interface AgScatterSeriesMarker extends AgCartesianSeriesMarker {
+    /** If sizeKey is used, explicitly specifies the extent of the domain of it's values. */
+    domain?: [number, number];
+}
 /** Configuration for scatter/bubble series. */
 export interface AgScatterSeriesOptions extends AgBaseSeriesOptions {
     /** Configuration for the treemap series.  */
     type?: 'scatter';
     /** Configuration for the markers used in the series.  */
-    marker?: AgCartesianSeriesMarker;
+    marker?: AgScatterSeriesMarker;
     /** Configuration for the labels shown on top of data points.  */
     label?: AgScatterSeriesLabelOptions;
     /** The key to use to retrieve x-values from the data.  */
@@ -1082,6 +1188,10 @@ export interface AgPieSeriesOptions extends AgBaseSeriesOptions {
     outerRadiusOffset?: PixelSize;
     /** The offset in pixels of the inner radius of the series. Used to construct doughnut charts. If this is not given, or a value of zero is given, a pie chart will be rendered. */
     innerRadiusOffset?: PixelSize;
+    /** Override of the automatically determined minimum radiusKey value from the data. */
+    radiusMin?: number;
+    /** Override of the automatically determined maximum radiusKey value from the data. */
+    radiusMax?: number;
     /** Configuration for the shadow used behind the chart series. */
     shadow?: AgDropShadowOptions;
     /** Series-specific tooltip configuration. */

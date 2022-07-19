@@ -10,7 +10,7 @@ const columnDefs: ColDef[] = [
   { field: 'bronze' },
 ]
 
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicDataWithId> = {
   defaultColDef: {
     width: 250,
     resizable: true,
@@ -19,7 +19,7 @@ const gridOptions: GridOptions = {
   rowSelection: 'multiple',
   // use the enterprise row model
   rowModelType: 'serverSide',
-  serverSideStoreType: 'partial',
+  serverSideInfiniteScroll: true,
   cacheBlockSize: 75,
   animateRows: true,
   isRowSelectable: isRowSelectable,
@@ -35,18 +35,18 @@ function isRowSelectable(rowNode: RowNode) {
   return !rowNode.group
 }
 
-function refreshStore() {
-  gridOptions.api!.refreshServerSideStore({ purge: true })
+function refresh() {
+  gridOptions.api!.refreshServerSide({ purge: true })
 }
 
 function updateSelectedRows() {
   var idsToUpdate = gridOptions.api!.getSelectedNodes().map(function (node) {
-    return node.data.id
+    return node.data!.id
   })
   var updatedRows: any[] = []
 
   gridOptions.api!.forEachNode(function (rowNode) {
-    if (idsToUpdate.indexOf(rowNode.data.id) >= 0) {
+    if (idsToUpdate.indexOf(rowNode.data!.id) >= 0) {
       // cloning underlying data otherwise the mock server data will also be updated
       var updated = JSON.parse(JSON.stringify(rowNode.data))
 

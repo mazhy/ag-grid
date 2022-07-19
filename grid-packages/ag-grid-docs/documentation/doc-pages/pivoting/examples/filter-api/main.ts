@@ -1,5 +1,5 @@
 import { Grid, GridOptions, ColDef } from '@ag-grid-community/core'
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   columnDefs: [
     { field: 'country', rowGroup: true, enableRowGroup: true },
     { field: 'year', pivot: true, enablePivot: true },
@@ -17,7 +17,7 @@ const gridOptions: GridOptions = {
     sortable: true,
     resizable: true,
   },
-  processSecondaryColDef: (colDef: ColDef) => {
+  processPivotResultColDef: (colDef: ColDef) => {
     colDef.filter = 'agNumberColumnFilter';
     colDef.floatingFilter = true;
   },
@@ -97,7 +97,7 @@ function filterHockeyIceHockey() {
 }
 
 function filterEveryYearGold() {
-  const goldPivotCols = gridOptions.columnApi!.getSecondaryColumns()!.filter(col => col.getColDef().pivotValueColumn!.getColId() === 'gold');
+  const goldPivotCols = gridOptions.columnApi!.getPivotResultColumns()!.filter(col => col.getColDef().pivotValueColumn!.getColId() === 'gold');
   if (goldPivotCols) {
     const newOpts = goldPivotCols.reduce((acc, col) => {
       acc[col.getId()] = {
@@ -112,7 +112,7 @@ function filterEveryYearGold() {
 }
 
 function filter2000Silver() {
-  const targetCol = gridOptions.columnApi!.getSecondaryPivotColumn(['2000'], 'silver');
+  const targetCol = gridOptions.columnApi!.getPivotResultColumn(['2000'], 'silver');
   if (targetCol) {
     gridOptions.api!.setFilterModel({
       ...gridOptions.api!.getFilterModel(),
@@ -131,5 +131,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
   fetch('https://www.ag-grid.com/example-assets/olympic-winners.json')
     .then(response => response.json())
-    .then(data => gridOptions.api!.setRowData(data))
+    .then((data: IOlympicData[]) => gridOptions.api!.setRowData(data))
 }) 

@@ -1,41 +1,6 @@
 import { AgCartesianChartOptions, AgChartOptions } from '../agChartOptions';
-import { DATA_TOTAL_GAME_WINNINGS_GROUPED_BY_COUNTRY, DATA_INTERNET_EXPLORER_MARKET_SHARE, DATA_BROWSER_MARKET_SHARE, DATA_TIME_SENSOR, DATA_SINGLE_DATUM_TIME_SENSOR, DATA_MISSING_X, DATA_TIME_MISSING_X, DATA_VISITORS } from './data';
-import { readFileSync } from 'fs';
-
-function loadExampleOptions(name: string, evalFn = 'options'): any {
-    const filters = [/^import .*/, /.*AgChart\.(update|create)/, /.* container\: .*/ /*, /.* data/*/];
-    const dataFile = `../../grid-packages/ag-grid-docs/documentation/doc-pages/charts-overview/examples/${name}/data.ts`;
-    const exampleFile = `../../grid-packages/ag-grid-docs/documentation/doc-pages/charts-overview/examples/${name}/main.ts`;
-
-    const cleanTs = (content: Buffer) => content
-        .toString()
-        .split('\n')
-        // Remove grossly unsupported lines.
-        .filter((line) => !filters.some(f => f.test(line)))
-        // Remove types, without matching string literals.
-        .map((line) => ["'", '"'].some(v => line.indexOf(v) >= 0) ? line : line.replace(/: [A-Z][A-Za-z<, >]*/g, ''))
-        // Remove declares.
-        .map((line) => line.replace(/declare var.*;/g, ''))
-        // Remove sugars.
-        .map((line) => line.replace(/[a-z]!/g, ''))
-        // Remove primitives + primitive arrays.
-        .map((line) => line.replace(/: (number|string|any)(\[\]){0,}/g, ''))
-        // Remove unsupported keywords.
-        .map((line) => line.replace(/export /g, ''));
-
-    const dataFileContent = cleanTs(readFileSync(dataFile));
-    const exampleFileLines = cleanTs(readFileSync(exampleFile));
-
-    let evalExpr = `${dataFileContent.join('\n')} \n ${exampleFileLines.join('\n')}; ${evalFn};`;
-    try {
-        const agCharts = require('../../main');
-        return eval(evalExpr);
-    } catch (error) {
-        console.error(`AG Charts - unable to read example data for [${name}]; error: ${error.message}`);
-        // console.log(evalExpr);
-        return [];
-    }
-}
+import { DATA_TOTAL_GAME_WINNINGS_GROUPED_BY_COUNTRY, DATA_INTERNET_EXPLORER_MARKET_SHARE, DATA_BROWSER_MARKET_SHARE, DATA_TIME_SENSOR, DATA_SINGLE_DATUM_TIME_SENSOR, DATA_MISSING_X, DATA_TIME_MISSING_X, DATA_VISITORS, DATA_MEAN_SEA_LEVEL, DATA_REVENUE, DATA_APPLE_REVENUE_BY_PRODUCT } from './data';
+import { loadExampleOptions } from './utils';
 
 export const DOCS_EXAMPLES = {
     '100--stacked-area': loadExampleOptions('100--stacked-area'),
@@ -77,19 +42,19 @@ export const DOCS_EXAMPLES = {
 
 export const BAR_CHART_EXAMPLE: AgChartOptions = DOCS_EXAMPLES["simple-bar"];
 
-export const GROUPED_BAR_CHART_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['grouped-bar'];
+export const GROUPED_BAR_CHART_EXAMPLE: AgCartesianChartOptions = DOCS_EXAMPLES['grouped-bar'];
 export const STACKED_BAR_CHART_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['stacked-bar'];
 export const ONE_HUNDRED_PERCENT_STACKED_BAR_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['100--stacked-bar'];
 export const BAR_CHART_WITH_LABELS_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['bar-with-labels'];
 export const SIMPLE_COLUMN_CHART_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['simple-column'];
-export const GROUPED_COLUMN_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['grouped-column'];
+export const GROUPED_COLUMN_EXAMPLE: AgCartesianChartOptions = DOCS_EXAMPLES['grouped-column'];
 export const STACKED_COLUMN_GRAPH_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['stacked-column'];
 export const ONE_HUNDRED_PERCENT_STACKED_COLUMNS_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['100--stacked-column'];
 export const COLUMN_CHART_WITH_NEGATIVE_VALUES_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['column-with-negative-values'];
 export const SIMPLE_PIE_CHART_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['simple-pie'];
 export const SIMPLE_DOUGHNUT_CHART_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['simple-doughnut'];
 export const SIMPLE_LINE_CHART_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['simple-line'];
-export const LINE_GRAPH_WITH_GAPS_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['line-with-gaps'];
+export const LINE_GRAPH_WITH_GAPS_EXAMPLE: AgCartesianChartOptions = DOCS_EXAMPLES['line-with-gaps'];
 export const SIMPLE_SCATTER_CHART_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['simple-scatter'];
 export const BUBBLE_GRAPH_WITH_NEGATIVE_VALUES_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['bubble-with-negative-values'];
 export const BUBBLE_GRAPH_WITH_CATEGORIES_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['bubble-with-categories'];
@@ -100,7 +65,7 @@ export const AREA_GRAPH_WITH_NEGATIVE_VALUES_EXAMPLE: AgChartOptions = DOCS_EXAM
 export const MARKET_INDEX_TREEMAP_GRAPH_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['market-index-treemap'];
 export const SIMPLE_HISTOGRAM_CHART_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['simple-histogram'];
 export const HISTOGRAM_WITH_SPECIFIED_BINS_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['histogram-with-specified-bins'];
-export const XY_HISTOGRAM_WITH_MEAN_EXAMPLE: AgChartOptions = DOCS_EXAMPLES['xy-histogram-with-mean-aggregation'];
+export const XY_HISTOGRAM_WITH_MEAN_EXAMPLE: AgCartesianChartOptions = DOCS_EXAMPLES['xy-histogram-with-mean-aggregation'];
 
 export const GROUPED_CATEGORY_AXIS_EXAMPLE: AgChartOptions = {};
 {
@@ -151,53 +116,53 @@ export const GROUPED_CATEGORY_AXIS_EXAMPLE: AgChartOptions = {};
 }
 
 export const AREA_MISSING_Y_DATA_EXAMPLE: AgChartOptions = {
-        data: DATA_INTERNET_EXPLORER_MARKET_SHARE,
-        axes: [
-            { type: 'category', position: 'bottom' },
-            { type: 'number', position: 'left' },
-        ],
-        series: [
-            {
-                type: 'area',
-                xKey: 'year',
-                yKeys: ['ie'],
-                yNames: ['IE'],
-                marker: {
-                    size: 5,
-                }
-            },
-        ],
-        title: {
-            text: 'Internet Explorer Market Share',
+    data: DATA_INTERNET_EXPLORER_MARKET_SHARE,
+    axes: [
+        { type: 'category', position: 'bottom' },
+        { type: 'number', position: 'left' },
+    ],
+    series: [
+        {
+            type: 'area',
+            xKey: 'year',
+            yKeys: ['ie'],
+            yNames: ['IE'],
+            marker: {
+                size: 5,
+            }
         },
-        subtitle: {
-            text: '2009-2019 (aka "good times")',
-        },
+    ],
+    title: {
+        text: 'Internet Explorer Market Share',
+    },
+    subtitle: {
+        text: '2009-2019 (aka "good times")',
+    },
 }
 
-export const STACKED_AREA_MISSING_Y_DATA_EXAMPLE: AgChartOptions =  {
-        data: DATA_BROWSER_MARKET_SHARE,
-        axes: [
-            { type: 'category', position: 'bottom' },
-            { type: 'number', position: 'left' },
-        ],
-        series: [
-            {
-                type: 'area',
-                xKey: 'year',
-                yKeys: ['ie', 'firefox', 'safari', 'chrome'],
-                yNames: ['IE', 'Firefox', 'Safari', 'Chrome'],
-                marker: {
-                    enabled: true,
-                },
+export const STACKED_AREA_MISSING_Y_DATA_EXAMPLE: AgChartOptions = {
+    data: DATA_BROWSER_MARKET_SHARE,
+    axes: [
+        { type: 'category', position: 'bottom' },
+        { type: 'number', position: 'left' },
+    ],
+    series: [
+        {
+            type: 'area',
+            xKey: 'year',
+            yKeys: ['ie', 'firefox', 'safari', 'chrome'],
+            yNames: ['IE', 'Firefox', 'Safari', 'Chrome'],
+            marker: {
+                enabled: true,
             },
-        ],
-        title: {
-            text: 'Browser Wars',
         },
-        subtitle: {
-            text: '2009-2019',
-        },
+    ],
+    title: {
+        text: 'Browser Wars',
+    },
+    subtitle: {
+        text: '2009-2019',
+    },
 }
 
 export const AREA_NUMBER_X_AXIS_MISSING_X_DATA_EXAMPLE: AgChartOptions = {
@@ -733,6 +698,351 @@ export const LINE_TIME_X_AXIS_NUMBER_Y_AXIS_POSITION_RIGHT_LABELS: AgCartesianCh
         },
     ],
 }
+
+export const COLUMN_NUMBER_X_AXIS_NUMBER_Y_AXIS: AgCartesianChartOptions = {
+    title: {
+        text: 'Mean Sea Level (mm)',
+    },
+    data: DATA_MEAN_SEA_LEVEL,
+    series: [
+        {
+            type: 'column',
+            xKey: 'time',
+            yKey: 'mm',
+            showInLegend: false,
+        },
+    ],
+    axes: [
+        {
+            type: 'number',
+            nice: false,
+            position: 'bottom',
+        },
+        {
+            type: 'number',
+            position: 'left',
+        },
+    ],
+}
+
+export const COLUMN_TIME_X_AXIS_NUMBER_Y_AXIS: AgCartesianChartOptions = {
+    title: {
+        text: "Apple's revenue by product category",
+    },
+    subtitle: {
+        text: 'in billion U.S. dollars',
+    },
+    data: DATA_REVENUE,
+    series: [
+        {
+            type: 'column',
+            xKey: 'date',
+            yKey: 'value',
+        },
+    ],
+    axes: [
+        {
+            type: 'time',
+            nice: false,
+            position: 'bottom',
+        },
+        {
+            type: 'number',
+            position: 'left',
+        },
+    ]
+}
+
+export const STACKED_COLUMN_NUMBER_X_AXIS_NUMBER_Y_AXIS: AgCartesianChartOptions = {
+    title: {
+        text: "Apple's revenue by product category",
+    },
+    subtitle: {
+        text: 'in billion U.S. dollars',
+    },
+    data: DATA_APPLE_REVENUE_BY_PRODUCT,
+    series: [
+        {
+            type: 'column',
+            xKey: 'iphone',
+            yKey: 'mac',
+            yName: 'Mac',
+            stacked: true,
+        },
+        {
+            type: 'column',
+            xKey: 'iphone',
+            yKey: 'ipad',
+            yName: 'iPad',
+            stacked: true,
+        },
+        {
+            type: 'column',
+            xKey: 'iphone',
+            yKey: 'wearables',
+            yName: 'Wearables',
+            stacked: true,
+        },
+        {
+            type: 'column',
+            xKey: 'iphone',
+            yKey: 'services',
+            yName: 'Services',
+            stacked: true,
+        },
+    ],
+    axes: [
+        {
+            type: 'number',
+            position: 'bottom',
+        },
+        {
+            type: 'number',
+            position: 'left',
+        },
+    ],
+}
+
+export const GROUPED_COLUMN_NUMBER_X_AXIS_NUMBER_Y_AXIS: AgCartesianChartOptions = {
+    title: {
+        text: "Apple's revenue by product category",
+    },
+    subtitle: {
+        text: 'in billion U.S. dollars',
+    },
+    data: DATA_APPLE_REVENUE_BY_PRODUCT,
+    series: [
+        {
+            type: 'column',
+            xKey: 'iphone',
+            yKey: 'mac',
+            yName: 'Mac',
+        },
+        {
+            type: 'column',
+            xKey: 'iphone',
+            yKey: 'ipad',
+            yName: 'iPad',
+        },
+        {
+            type: 'column',
+            xKey: 'iphone',
+            yKey: 'wearables',
+            yName: 'Wearables',
+        },
+        {
+            type: 'column',
+            xKey: 'iphone',
+            yKey: 'services',
+            yName: 'Services',
+        },
+    ],
+    axes: [
+        {
+            type: 'number',
+            nice: false,
+            position: 'bottom',
+        },
+        {
+            type: 'number',
+            position: 'left',
+        },
+    ],
+}
+
+export const BAR_NUMBER_X_AXIS_NUMBER_Y_AXIS: AgCartesianChartOptions = {
+    title: {
+        text: 'Mean Sea Level (mm)',
+    },
+    data: DATA_MEAN_SEA_LEVEL,
+    series: [
+        {
+            type: 'bar',
+            xKey: 'time',
+            yKey: 'mm',
+            showInLegend: false,
+        },
+    ],
+    axes: [
+        {
+            type: 'number',
+            position: 'bottom',
+        },
+        {
+            type: 'number',
+            position: 'left',
+        },
+    ],
+}
+
+export const BAR_TIME_X_AXIS_NUMBER_Y_AXIS: AgCartesianChartOptions = {
+    title: {
+        text: "Apple's revenue by product category",
+    },
+    subtitle: {
+        text: 'in billion U.S. dollars',
+    },
+    data: DATA_REVENUE,
+    series: [
+        {
+            type: 'bar',
+            xKey: 'date',
+            yKey: 'value',
+        },
+    ],
+    axes: [
+        {
+            type: 'time',
+            nice: false,
+            position: 'left',
+        },
+        {
+            type: 'number',
+            position: 'bottom',
+        },
+    ]
+}
+
+export const STACKED_BAR_NUMBER_X_AXIS_NUMBER_Y_AXIS: AgCartesianChartOptions = {
+    title: {
+        text: "Apple's revenue by product category",
+    },
+    subtitle: {
+        text: 'in billion U.S. dollars',
+    },
+    data: DATA_APPLE_REVENUE_BY_PRODUCT,
+    series: [
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'mac',
+            yName: 'Mac',
+            stacked: true,
+        },
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'ipad',
+            yName: 'iPad',
+            stacked: true,
+        },
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'wearables',
+            yName: 'Wearables',
+            stacked: true,
+        },
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'services',
+            yName: 'Services',
+            stacked: true,
+        },
+    ],
+    axes: [
+        {
+            type: 'number',
+            nice: false,
+            position: 'bottom',
+        },
+        {
+            type: 'number',
+            position: 'left',
+        },
+    ],
+}
+
+export const GROUPED_BAR_NUMBER_X_AXIS_NUMBER_Y_AXIS: AgCartesianChartOptions = {
+    title: {
+        text: "Apple's revenue by product category",
+    },
+    subtitle: {
+        text: 'in billion U.S. dollars',
+    },
+    data: DATA_APPLE_REVENUE_BY_PRODUCT,
+    series: [
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'mac',
+            yName: 'Mac',
+        },
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'ipad',
+            yName: 'iPad',
+        },
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'wearables',
+            yName: 'Wearables',
+        },
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'services',
+            yName: 'Services',
+        },
+    ],
+    axes: [
+        {
+            type: 'number',
+            position: 'bottom',
+        },
+        {
+            type: 'number',
+            position: 'left',
+        },
+    ],
+}
+
+export const TRUNCATED_LEGEND_ITEMS: AgCartesianChartOptions = {
+    title: {
+        text: "Apple's revenue by product category",
+    },
+    subtitle: {
+        text: 'in billion U.S. dollars',
+    },
+    data: DATA_APPLE_REVENUE_BY_PRODUCT,
+    series: [
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'mac',
+            yName: 'Mac',
+        },
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'ipad',
+            yName: 'iPad',
+        },
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'wearables',
+            yName: 'Wearables long legend item text',
+        },
+        {
+            type: 'bar',
+            xKey: 'iphone',
+            yKey: 'services',
+            yName: 'Services another long legend item text',
+        },
+    ],
+    legend: {
+        position: 'left',
+        item: {
+            paddingY: 15,
+            maxWidth: 100,
+        },
+    },
+}
+
 
 // START ADVANCED EXAMPLES =========================================================================
 

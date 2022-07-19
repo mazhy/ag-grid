@@ -2,71 +2,36 @@ import { Scene } from "./scene";
 import { Matrix } from "./matrix";
 import { BBox } from "./bbox";
 import { createId } from "../util/id";
+import { ChangeDetectable, SceneChangeDetection, RedrawType } from './changeDetectable';
+
+export { SceneChangeDetection, RedrawType };
+
+// Work-around for typing issues with Angular 13+ (see AG-6969),
+type OffscreenCanvasRenderingContext2D = any;
 
 export enum PointerEvents {
     All,
     None
 }
 
-export enum RedrawType {
-    NONE, // No change in rendering.
-
-    // Canvas doesn't need clearing, an incremental re-rerender is sufficient.
-    TRIVIAL, // Non-positional change in rendering.
-
-    // Group needs clearing, a semi-incremental re-render is sufficient.
-    MINOR, // Small change in rendering, potentially affecting other elements in the same group.
-
-    // Canvas needs to be cleared for these redraw types.
-    MAJOR, // Significant change in rendering.
-}
-
-export function SceneChangeDetection(opts?: {
-    redraw?: RedrawType,
-    type?: 'normal' | 'transform' | 'path' | 'font',
-    convertor?: (o: any) => any,
-    changeCb?: (o: any) => any,
-}) {
-    const { redraw = RedrawType.TRIVIAL, type = 'normal', changeCb, convertor } = opts || {};
-
-    return function (target: any, key: string) {
-        // `target` is either a constructor (static member) or prototype (instance member)
-        const privateKey = `__${key}`;
-
-        if (!target[key]) {
-            Object.defineProperty(target, key, {
-                set: function (value: any) {
-                    const oldValue = this[privateKey];
-                    if (convertor) {
-                        value = convertor(value);
-                    }
-                    if (value !== oldValue) {
-                        this[privateKey] = value;
-                        if (type === 'normal') {
-                            this.markDirty(redraw);
-                        } else if (type === 'transform') {
-                            this.markDirtyTransform(redraw);
-                        }
-                        if (changeCb) {
-                            changeCb(this);
-                        }
-                    }
-                },
-                get: function (): any {
-                    return this[privateKey];
-                },
-                enumerable: true,
-                configurable: true
-            });
-        }
-    }
+export type RenderContext = {
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+    forceRender: boolean;
+    resized: boolean;
+    clipBBox?: BBox;
+    stats?: {
+        nodesRendered: number;
+        nodesSkipped: number;
+        layersRendered: number;
+        layersSkipped: number;
+    };
 }
 
 /**
  * Abstract scene graph node.
  * Each node can have zero or one parent and belong to zero or one scene.
  */
-export abstract class Node { // Don't confuse with `window.Node`.
+export abstract class Node extends ChangeDetectable { // Don't confuse with `window.Node`.
 
     /**
      * Unique node ID in the form `ClassName-NaturalNumber`.
@@ -103,15 +68,14 @@ export abstract class Node { // Don't confuse with `window.Node`.
     // Note: _setScene and _setParent methods are not meant for end users,
     // but they are not quite private either, rather, they have package level visibility.
 
+    protected _debug?: Scene['debug'];
     protected _scene?: Scene;
     _setScene(value?: Scene) {
         this._scene = value;
+        this._debug = value?.debug;
 
-        const children = this.children;
-        const n = children.length;
-
-        for (let i = 0; i < n; i++) {
-            children[i]._setScene(value);
+        for (const child of this.children) {
+            child._setScene(value);
         }
     }
     get scene(): Scene | undefined {
@@ -163,24 +127,13 @@ export abstract class Node { // Don't confuse with `window.Node`.
         if (Node.isNode(nodes)) {
             nodes = [nodes];
         }
-        // The function takes an array rather than having open-ended
-        // arguments like `...nodes: Node[]` because the latter is
-        // transpiled to a function where the `arguments` object
-        // is copied to a temporary array inside a loop.
-        // So an array is created either way. And if we already have
-        // an array of nodes we want to add, we have to use the prohibitively
-        // expensive spread operator to pass it to the function,
-        // and, on top of that, the copy of the `arguments` is still made.
-        const n = nodes.length;
 
-        for (let i = 0; i < n; i++) {
-            const node = nodes[i];
-
+        for (const node of nodes) {
             if (node.parent) {
                 throw new Error(`${node} already belongs to another parent: ${node.parent}.`);
             }
             if (node.scene) {
-                throw new Error(`${node} already belongs a scene: ${node.scene}.`);
+                throw new Error(`${node} already belongs to a scene: ${node.scene}.`);
             }
             if (this.childSet[node.id]) {
                 // Cast to `any` to avoid `Property 'name' does not exist on type 'Function'`.
@@ -194,28 +147,11 @@ export abstract class Node { // Don't confuse with `window.Node`.
             node._setScene(this.scene);
         }
 
-        this.markDirty(RedrawType.MAJOR);
+        this.markDirty(this, RedrawType.MAJOR);
     }
 
     appendChild<T extends Node>(node: T): T {
-        if (node.parent) {
-            throw new Error(`${node} already belongs to another parent: ${node.parent}.`);
-        }
-        if (node.scene) {
-            throw new Error(`${node} already belongs to a scene: ${node.scene}.`);
-        }
-        if (this.childSet[node.id]) {
-            // Cast to `any` to avoid `Property 'name' does not exist on type 'Function'`.
-            throw new Error(`Duplicate ${(node.constructor as any).name} node: ${node}`);
-        }
-
-        this._children.push(node);
-        this.childSet[node.id] = true;
-
-        node._parent = this;
-        node._setScene(this.scene);
-
-        this.markDirty(RedrawType.MAJOR);
+        this.append(node);
 
         return node;
     }
@@ -229,7 +165,7 @@ export abstract class Node { // Don't confuse with `window.Node`.
                 delete this.childSet[node.id];
                 node._parent = undefined;
                 node._setScene();
-                this.markDirty(RedrawType.MINOR);
+                this.markDirty(node, RedrawType.MAJOR);
 
                 return node;
             }
@@ -265,7 +201,7 @@ export abstract class Node { // Don't confuse with `window.Node`.
                     + `but is not in its list of children.`);
             }
 
-            this.markDirty(RedrawType.MAJOR);
+            this.markDirty(node, RedrawType.MAJOR);
         } else {
             this.append(node);
         }
@@ -318,7 +254,7 @@ export abstract class Node { // Don't confuse with `window.Node`.
     private _dirtyTransform = false;
     markDirtyTransform() {
         this._dirtyTransform = true;
-        this.markDirty(RedrawType.MAJOR);
+        this.markDirty(this, RedrawType.MAJOR);
     }
 
     @SceneChangeDetection({ type: 'transform' })
@@ -378,7 +314,7 @@ export abstract class Node { // Don't confuse with `window.Node`.
     @SceneChangeDetection({ type: 'transform' })
     translationY: number = 0;
 
-    containsPoint(x: number, y: number): boolean {
+    containsPoint(_x: number, _y: number): boolean {
         return false;
     }
 
@@ -387,8 +323,6 @@ export abstract class Node { // Don't confuse with `window.Node`.
      * Recursively checks if the given point is inside this node or any of its children.
      * Returns the first matching node or `undefined`.
      * Nodes that render later (show on top) are hit tested first.
-     * @param x
-     * @param y
      */
     pickNode(x: number, y: number): Node | undefined {
         if (!this.visible || this.pointerEvents === PointerEvents.None || !this.containsPoint(x, y)) {
@@ -397,7 +331,19 @@ export abstract class Node { // Don't confuse with `window.Node`.
 
         const children = this.children;
 
-        if (children.length) {
+        if (children.length > 1_000) {
+            // Try to optimise which children to interrogate; BBox calculation is an approximation
+            // for more complex shapes, so discarding items based on this will save a lot of
+            // processing when the point is nowhere near the child.
+            for (let i = children.length - 1; i >= 0; i--) {
+                const hit = children[i].computeBBox()?.containsPoint(x, y) ?
+                    children[i].pickNode(x, y) : undefined ;
+
+                if (hit) {
+                    return hit;
+                }
+            }
+        } else if (children.length) {
             // Nodes added later should be hit-tested first,
             // as they are rendered on top of the previously added nodes.
             for (let i = children.length - 1; i >= 0; i--) {
@@ -412,6 +358,26 @@ export abstract class Node { // Don't confuse with `window.Node`.
     }
 
     computeBBox(): BBox | undefined { return; }
+
+    computeTransformedBBox(): BBox | undefined {
+        const bbox = this.computeBBox();
+
+        if (!bbox) {
+            return undefined;
+        }
+
+        this.computeTransformMatrix();
+        const matrix = Matrix.flyweight(this.matrix);
+        let parent = this.parent;
+        while (parent) {
+            parent.computeTransformMatrix();
+            matrix.preMultiplySelf(parent.matrix);
+            parent = parent.parent;
+        }
+        matrix.transformBBox(bbox, 0, bbox);
+
+        return bbox;
+    }
 
     computeBBoxCenter(): [number, number] {
         const bbox = this.computeBBox && this.computeBBox();
@@ -428,7 +394,7 @@ export abstract class Node { // Don't confuse with `window.Node`.
         if (!this._dirtyTransform) {
             return;
         }
-        
+
         // TODO: transforms without center of scaling and rotation correspond directly
         //       to `setAttribute('transform', 'translate(tx, ty) rotate(rDeg) scale(sx, sy)')`
         //       in SVG. Our use cases will mostly require positioning elements (rects, circles)
@@ -496,8 +462,12 @@ export abstract class Node { // Don't confuse with `window.Node`.
         ]).inverseTo(this.inverseMatrix);
     }
 
-    render(ctx: CanvasRenderingContext2D, forceRender: boolean): void {
+    render(renderCtx: RenderContext): void {
+        const { stats } = renderCtx;
+
         this._dirty = RedrawType.NONE;
+
+        if (stats) stats.nodesRendered++;
     }
 
     clearBBox(ctx: CanvasRenderingContext2D) {
@@ -510,8 +480,7 @@ export abstract class Node { // Don't confuse with `window.Node`.
         ctx.clearRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
     }
 
-    private _dirty: RedrawType = RedrawType.MAJOR;
-    markDirty(type = RedrawType.TRIVIAL, parentType = type) {
+    markDirty(_source: Node, type = RedrawType.TRIVIAL, parentType = type) {
         if (this._dirty > type) {
             return;
         }
@@ -522,7 +491,7 @@ export abstract class Node { // Don't confuse with `window.Node`.
 
         this._dirty = type;
         if (this.parent) {
-            this.parent.markDirty(parentType);
+            this.parent.markDirty(this, parentType);
         } else if (this.scene) {
             this.scene.markDirty();
         }
@@ -531,20 +500,59 @@ export abstract class Node { // Don't confuse with `window.Node`.
         return this._dirty;
     }
 
-    @SceneChangeDetection({ redraw: RedrawType.MAJOR })
+    markClean(opts?: {force?: boolean, recursive?: boolean}) {
+        const { force = false, recursive = true } = opts || {};
+
+        if (this._dirty === RedrawType.NONE && !force) {
+            return;
+        }
+
+        this._dirty = RedrawType.NONE;
+
+        if (recursive) {
+            for (const child of this.children) {
+                child.markClean();
+            }
+        }
+    }
+
+    @SceneChangeDetection({ redraw: RedrawType.MAJOR, changeCb: (o) => o.visibilityChanged() })
     visible: boolean = true;
+    protected visibilityChanged() {
+        // Override point for sub-classes to react to visibility changes.
+    }
 
     protected dirtyZIndex: boolean = false;
 
     @SceneChangeDetection({
-        redraw: RedrawType.MINOR,
+        redraw: RedrawType.TRIVIAL,
         changeCb: (o) => {
             if (o.parent) {
                 o.parent.dirtyZIndex = true;
             }
+            o.zIndexChanged();
         },
     })
     zIndex: number = 0;
 
     pointerEvents: PointerEvents = PointerEvents.All;
+
+    get nodeCount() {
+        let count = 1;
+        let dirtyCount = this._dirty >= RedrawType.NONE || this._dirtyTransform ? 1 : 0;
+        let visibleCount = this.visible ? 1 : 0;
+
+        for (const child of this._children) {
+            const { count: childCount, visibleCount: childVisibleCount, dirtyCount: childDirtyCount } = child.nodeCount;
+            count += childCount;
+            visibleCount += childVisibleCount;
+            dirtyCount += childDirtyCount;
+        }
+
+        return { count, visibleCount, dirtyCount };
+    }
+
+    protected zIndexChanged() {
+        // Override point for sub-classes.
+    }
 }

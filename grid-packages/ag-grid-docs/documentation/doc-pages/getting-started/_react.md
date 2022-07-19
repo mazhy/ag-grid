@@ -28,8 +28,8 @@
 | import { render } from 'react-dom';
 | import { AgGridReact } from 'ag-grid-react';
 |
-| import 'ag-grid-community/dist/styles/ag-grid.css';
-| import 'ag-grid-community/dist/styles/ag-theme-alpine.css';
+| import 'ag-grid-community/styles/ag-grid.css';
+| import 'ag-grid-community/styles/ag-theme-alpine.css';
 |
 | const App = () => {
 |    const [rowData] = useState([
@@ -125,8 +125,8 @@
 |
 | ```jsx
 |"dependencies": {
-|    "ag-grid-community": "^27.0.1",
-|    "ag-grid-react": "^27.0.1",
+|    "ag-grid-community": "@AG_GRID_VERSION@",
+|    "ag-grid-react": "@AG_GRID_VERSION@",
 |    ...
 | ```
 |
@@ -144,8 +144,8 @@
 |import { render } from 'react-dom';
 |import { AgGridReact } from 'ag-grid-react'; // the AG Grid React Component
 |
-|import 'ag-grid-community/dist/styles/ag-grid.css'; // Core grid CSS, always needed
-|import 'ag-grid-community/dist/styles/ag-theme-alpine.css'; // Optional theme CSS
+|import 'ag-grid-community/styles/ag-grid.css'; // Core grid CSS, always needed
+|import 'ag-grid-community/styles/ag-theme-alpine.css'; // Optional theme CSS
 |
 |const App = () => {
 |
@@ -223,8 +223,8 @@
 | Two CSS files were loaded as follows:
 |
 | ```jsx
-|import 'ag-grid-community/dist/styles/ag-grid.css'; // Core grid CSS, always needed
-|import 'ag-grid-community/dist/styles/ag-theme-alpine.css'; // Optional theme CSS
+|import 'ag-grid-community/styles/ag-grid.css'; // Core grid CSS, always needed
+|import 'ag-grid-community/styles/ag-theme-alpine.css'; // Optional theme CSS
 | ```
 |
 | The first `ag-grid.css` is always needed. It's the core structural CSS needed by the grid. Without this, the Grid will not work.
@@ -235,7 +235,7 @@
 |<div className="ag-theme-alpine" style={{width: 500, height: 500}}>
 | ```
 |
-| You can select from any of the [Grid Provided Themes](/themes-provided/). If you don't like the provided themes you can [Customise the Provided Theme](/themes-customising/) or do not use a Theme and style the grid yourself from scratch.
+| You can select from any of the [Grid Provided Themes](/themes/). If you don't like the provided themes you can [Customise the Provided Theme](/themes/) or do not use a Theme and style the grid yourself from scratch.
 |
 | The dimension of the Grid is also set on the parent DIV via `style={{width: 500, height: 500}}`. The grid will fill 100% in both directions, so size it's parent element to the required dimensions.
 |
@@ -365,9 +365,9 @@
 |
 | ```jsx
 |"dependencies": {
-|    "ag-grid-community": "^27.0.1",
-|    "ag-grid-enterprise": "^27.0.1",
-|    "ag-grid-react": "^27.0.1",
+|    "ag-grid-community": "@AG_GRID_VERSION@",
+|    "ag-grid-enterprise": "@AG_GRID_VERSION@",
+|    "ag-grid-react": "@AG_GRID_VERSION@",
 |    ...
 | ```
 |

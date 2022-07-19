@@ -12,7 +12,7 @@ const columnDefs: ColDef[] = [
   { field: 'bronze' },
 ]
 
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   defaultColDef: {
     width: 100,
     resizable: true,
@@ -20,7 +20,7 @@ const gridOptions: GridOptions = {
   rowSelection: 'single',
   columnDefs: columnDefs,
   rowModelType: 'serverSide',
-  serverSideStoreType: 'partial',
+  serverSideInfiniteScroll: true,
   getRowId: getRowId
 }
 
@@ -62,7 +62,7 @@ function onBtRemove() {
     window.rowDataServerSide.splice(indexToRemove, 1)
   }
 
-  gridOptions.api!.refreshServerSideStore()
+  gridOptions.api!.refreshServerSide()
 }
 
 function onBtAdd() {
@@ -80,7 +80,7 @@ function onBtAdd() {
   })
   newItemCount++
 
-  gridOptions.api!.refreshServerSideStore()
+  gridOptions.api!.refreshServerSide()
 }
 
 function createMyDataSource(data: any[]) {

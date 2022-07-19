@@ -170,6 +170,12 @@ export interface Config {
     overrideBottomMargin?: string;
     /** Suppress the missing property check. Needed for events as they are dynamic and so do not appear in src code */
     suppressMissingPropCheck?: true;
+
+    /** The width of the left column in characters. Names will wrap if there are any longer names. */
+    maxLeftColumnWidth: number;
+
+    /** A regular expression limiting the names that should appear */
+    namePattern: string;
 }
 export type SectionProps = {
     framework: string;

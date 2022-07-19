@@ -1,11 +1,27 @@
 import { HdpiCanvas } from "../canvas/hdpiCanvas";
-import { Node, RedrawType } from "./node";
+import { Node, RedrawType, RenderContext } from "./node";
 import { createId } from "../util/id";
+import { Group } from "./group";
+import { HdpiOffscreenCanvas } from "../canvas/hdpiOffscreenCanvas";
+import { windowValue } from '../util/window';
 
 interface DebugOptions {
-    renderFrameIndex: boolean;
+    stats: false | 'basic' | 'detailed';
+    dirtyTree: boolean;
     renderBoundingBoxes: boolean;
     consoleLog: boolean;
+}
+
+interface SceneOptions {
+    document: Document;
+    mode: 'simple' | 'composite' | 'dom-composite' | 'adv-composite';
+}
+
+interface SceneLayer {
+    id: number;
+    name?: string;
+    zIndex: number;
+    canvas: HdpiOffscreenCanvas | HdpiCanvas;
 }
 
 export class Scene {
@@ -15,14 +31,29 @@ export class Scene {
     readonly id = createId(this);
 
     readonly canvas: HdpiCanvas;
+    readonly layers: SceneLayer[] = [];
+
     private readonly ctx: CanvasRenderingContext2D;
 
-    // As a rule of thumb, constructors with no parameters are preferred.
-    // A few exceptions are:
-    // - we absolutely need to know something at construction time (document)
-    // - knowing something at construction time meaningfully improves performance (width, height)
-    constructor(document = window.document, width?: number, height?: number) {
-        this.canvas = new HdpiCanvas(document, width, height);
+    private readonly opts: SceneOptions;
+
+    constructor(
+        opts: {
+            width?: number,
+            height?: number,
+        } & Partial<SceneOptions>
+    ) {
+        const {
+            document = window.document,
+            mode = windowValue('agChartsSceneRenderModel') || 'adv-composite',
+            width,
+            height,
+        } = opts;
+
+        this.opts = { document, mode };
+        this.debug.stats = windowValue('agChartsSceneStats') ?? false;
+        this.debug.dirtyTree = windowValue('agChartsSceneDirtyTree') ?? false;
+        this.canvas = new HdpiCanvas({ document, width, height });
         this.ctx = this.canvas.context;
     }
 
@@ -54,10 +85,10 @@ export class Scene {
         width = Math.round(width);
         height = Math.round(height);
 
-        if (width === this.width && height === this.height) {
-            return false;
-        } else if (width <= 0 || height <= 0) {
-            // HdpiCanvas doesn't allow width/height <= 0.
+        // HdpiCanvas doesn't allow width/height <= 0.
+        const lessThanZero = width <= 0 || height <= 0;
+        const unchanged = width === this.width && height === this.height;
+        if (unchanged || lessThanZero) {
             return false;
         }
 
@@ -65,6 +96,99 @@ export class Scene {
         this.markDirty();
         
         return true;
+    }
+
+    private _nextZIndex = 0;
+    private _nextLayerId = 0;
+    addLayer(opts?: { zIndex?: number, name?: string }): HdpiCanvas | HdpiOffscreenCanvas | undefined {
+        const { mode } = this.opts;
+        const layeredModes = ['composite', 'dom-composite', 'adv-composite'];
+        if (!layeredModes.includes(mode)) {
+            return undefined;
+        }
+
+        const { zIndex = this._nextZIndex++, name } = opts || {};
+        const { width, height } = this;
+        const domLayer = mode === 'dom-composite';
+        const advLayer = mode === 'adv-composite';
+        const canvas = !advLayer || !HdpiOffscreenCanvas.isSupported() ? 
+            new HdpiCanvas({
+                document: this.opts.document,
+                width,
+                height,
+                domLayer,
+                zIndex,
+                name,
+            }) :
+            new HdpiOffscreenCanvas({
+                width,
+                height,
+            });
+        const newLayer = {
+            id: this._nextLayerId++,
+            name,
+            zIndex,
+            canvas,
+        };
+
+        if (zIndex >= this._nextZIndex) {
+            this._nextZIndex = zIndex + 1;
+        }
+
+        this.layers.push(newLayer);
+        this.sortLayers();
+
+        if (domLayer) {
+            const domCanvases= this.layers.map(v => v.canvas)
+                .filter((v): v is HdpiCanvas => v instanceof HdpiCanvas);
+            const newLayerIndex = domCanvases.findIndex(v => v === canvas);
+            const lastLayer = domCanvases[newLayerIndex - 1] ?? this.canvas;
+            lastLayer.element.insertAdjacentElement('afterend', (canvas as HdpiCanvas).element);
+        }
+
+        if (this.debug.consoleLog) {
+            console.log({ layers: this.layers });
+        }
+
+        return newLayer.canvas;
+    }
+
+    removeLayer(canvas: HdpiCanvas | HdpiOffscreenCanvas) {
+        const index = this.layers.findIndex((l) => l.canvas === canvas);
+
+        if (index >= 0) {
+            this.layers.splice(index, 1);
+            canvas.destroy();
+            this.markDirty();
+
+            if (this.debug.consoleLog) {
+                console.log({ layers: this.layers });
+            }
+        }
+    }
+
+    moveLayer(canvas: HdpiCanvas | HdpiOffscreenCanvas, newZIndex: number) {
+        const layer = this.layers.find((l) => l.canvas === canvas);
+
+        if (layer) {
+            layer.zIndex = newZIndex;
+            this.sortLayers();
+            this.markDirty();
+
+            if (this.debug.consoleLog) {
+                console.log({ layers: this.layers });
+            }
+        }
+    }
+
+    private sortLayers() {
+        this.layers.sort((a, b) => { 
+            const zDiff = a.zIndex - b.zIndex;
+            if (zDiff !== 0) {
+                return zDiff;
+            }
+            return a.id - b.id;
+        });
     }
 
     private _dirty = false;
@@ -102,21 +226,20 @@ export class Scene {
     }
 
     readonly debug: DebugOptions = {
-        renderFrameIndex: false,
+        dirtyTree: false,
+        stats: false,
         renderBoundingBoxes: false,
         consoleLog: false,
     };
 
-    private _frameIndex = 0;
-    get frameIndex(): number {
-        return this._frameIndex;
-    }
-
-    render() {
-        const { ctx, root, pendingSize } = this;
+    render(opts?: { debugSplitTimes: number[], extraDebugStats: Record<string, number> }) {
+        const { debugSplitTimes = [performance.now()], extraDebugStats = {} } = opts || {};
+        const { canvas, ctx, root, layers, pendingSize, opts: { mode } } = this;
 
         if (pendingSize) {
             this.canvas.resize(...pendingSize);
+            this.layers.forEach((layer) => layer.canvas.resize(...pendingSize));
+
             this.pendingSize = undefined;
         }
 
@@ -129,34 +252,151 @@ export class Scene {
             return;
         }
 
+        const renderCtx: RenderContext = {
+            ctx,
+            forceRender: true,
+            resized: !!pendingSize,
+        };
+        if (this.debug.stats === 'detailed') {
+            renderCtx.stats = { layersRendered: 0, layersSkipped: 0, nodesRendered: 0, nodesSkipped: 0 };
+        }
+
         let canvasCleared = false;
         if (!root || root.dirty >= RedrawType.TRIVIAL) {
             // start with a blank canvas, clear previous drawing
             canvasCleared = true;
-            ctx.clearRect(0, 0, this.width, this.height);
+            canvas.clear();
         }
 
-        if (root) {
+        if (root && this.debug.dirtyTree) {
+            const {dirtyTree, paths} = this.buildDirtyTree(root);
+            console.log({dirtyTree, paths});
+        }
+
+        if (root && canvasCleared) {
             if (this.debug.consoleLog) {
-                console.log({ redrawType: RedrawType[root.dirty], canvasCleared });
+                console.log('before', { redrawType: RedrawType[root.dirty], canvasCleared, tree: this.buildTree(root) });
             }
 
             if (root.visible) {
                 ctx.save();
-                root.render(ctx, canvasCleared);
+                root.render(renderCtx);
                 ctx.restore();
             }
         }
 
-        this._frameIndex++;
+        if (mode !== 'dom-composite' && layers.length > 0 && canvasCleared) {
+            ctx.save();
+            ctx.setTransform(1 / canvas.pixelRatio, 0, 0, 1 / canvas.pixelRatio, 0, 0);
+            layers.forEach(({ canvas: { imageSource, enabled, opacity }}) => {
+                if (!enabled) {
+                    return;
+                }
 
-        if (this.debug.renderFrameIndex) {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, 40, 15);
-            ctx.fillStyle = 'black';
-            ctx.fillText(this.frameIndex.toString(), 2, 10);
+                ctx.globalAlpha = opacity;
+                ctx.drawImage(imageSource, 0, 0);
+            });
+            ctx.restore();
         }
 
         this._dirty = false;
+
+        const end = performance.now();
+
+        if (this.debug.stats) {
+            const start = debugSplitTimes[0];
+            debugSplitTimes.push(end);
+
+            const pct = (rendered: number, skipped: number) => {
+                const total = rendered + skipped;
+                return `${rendered} / ${total} (${Math.round(100*rendered/total)}%)`;
+            }
+            const time = (start: number, end: number) => {
+                return `${Math.round((end - start)*100) / 100}ms`;
+            }
+            const { layersRendered = 0, layersSkipped = 0, nodesRendered = 0, nodesSkipped = 0 } =
+                renderCtx.stats || {};
+
+            const splits = debugSplitTimes
+                .map((t, i) => i > 0 ? time(debugSplitTimes[i - 1], t) : null)
+                .filter(v => v != null)
+                .join(' + ');
+            const extras = Object.entries(extraDebugStats)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(' ; ');
+
+            const stats = [
+                `${time(start, end)} (${splits})`,
+                `${extras}`,
+                this.debug.stats === 'detailed' ? `Layers: ${pct(layersRendered, layersSkipped)}` : null,
+                this.debug.stats === 'detailed' ? `Nodes: ${pct(nodesRendered, nodesSkipped)}` : null,
+            ].filter((v): v is string => v != null);
+            const lineHeight = 15;
+
+            ctx.save();
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, 120, 10 + (lineHeight * stats.length));
+            ctx.fillStyle = 'black';
+            let index = 0;
+            for (const stat of stats) {
+                ctx.fillText(stat, 2, 10 + (index++ * lineHeight));
+            }
+            ctx.restore();
+        }
+
+        if (root && this.debug.consoleLog) {
+            console.log('after', { redrawType: RedrawType[root.dirty], canvasCleared, tree: this.buildTree(root) });
+        }
+}
+
+    buildTree(node: Node): { name?: string, node?: any, dirty?: string } {
+        const name = (node instanceof Group ? node.name : null) ?? node.id;
+
+        return {
+            name,
+            node,
+            dirty: RedrawType[node.dirty],
+            ...node.children.map((c) => this.buildTree(c))
+                .reduce((result, childTree) => {
+                    let { name, node } = childTree;
+                    if (!node.visible || node.opacity <= 0) {
+                        name = `* ${name}`;
+                    }
+                    result[name ?? '<unknown>'] = childTree;
+                    return result;
+                }, {} as Record<string, {}>),
+        };
+    }
+
+    buildDirtyTree(node: Node): {
+        dirtyTree: { name?: string, node?: any, dirty?: string },
+        paths: string[],
+    } {
+        if (node.dirty === RedrawType.NONE) {
+            return { dirtyTree: {}, paths: [] };
+        }
+
+        const childrenDirtyTree = node.children.map(c => this.buildDirtyTree(c))
+            .filter(c => c.paths.length > 0);
+        const name = (node instanceof Group ? node.name : null) ?? node.id;
+        const paths = childrenDirtyTree.length === 0 ? [ name ]
+            : childrenDirtyTree.map(c => c.paths)
+                .reduce((r, p) => r.concat(p), [])
+                .map(p => `${name}.${p}`);
+
+        return {
+            dirtyTree: {
+                name,
+                node,
+                dirty: RedrawType[node.dirty],
+                ...childrenDirtyTree.map((c) => c.dirtyTree)
+                    .filter((t) => t.dirty !== undefined)
+                    .reduce((result, childTree) => {
+                        result[childTree.name || '<unknown>'] = childTree;
+                        return result;
+                    }, {} as Record<string, {}>),
+            },
+            paths,
+        };
     }
 }

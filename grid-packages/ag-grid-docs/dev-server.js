@@ -3,7 +3,6 @@ const fs = require('fs-extra');
 const cp = require('child_process');
 const glob = require('glob');
 const resolve = require('path').resolve;
-const http = require('http');
 const https = require('https');
 const express = require('express');
 const realWebpack = require('webpack');
@@ -12,7 +11,7 @@ const chokidar = require('chokidar');
 const tcpPortUsed = require('tcp-port-used');
 const {generateDocumentationExamples} = require('./example-generator-documentation');
 const {watchValidateExampleTypes} = require('./example-validator');
-const {updateBetweenStrings, getAllModules} = require('./utils');
+const {updateBetweenStrings, getAllModules, processStdio} = require('./utils');
 const {getFlattenedBuildChainInfo, buildPackages, buildCss, watchCss} = require('./lernaOperations');
 const {EOL} = os;
 
@@ -27,10 +26,7 @@ const flattenArray = array => [].concat.apply([], array);
 
 const lnk = require('lnk').sync;
 
-const EXPRESS_HTTP_PORT = 8090;
 const EXPRESS_HTTPS_PORT = 8080;
-const HOST = '127.0.0.1';
-const WINDOWS = /^win/.test(os.platform());
 
 function reporter(middlewareOptions, options) {
     const {log, state, stats} = options;
@@ -84,7 +80,7 @@ function addWebpackMiddlewareForConfig(app, configFile, prefix, bundleDescriptor
 
 function launchGatsby() {
     console.log("Launching Gatsby");
-    const npm = WINDOWS ? 'npm.cmd' : 'npm';
+    const npm = 'npm';
     const gatsby = cp.spawn(npm, ['start'], {
         cwd: 'documentation',
         stdio: [process.stdin, process.stdout, process.stderr]
@@ -110,11 +106,14 @@ function serveCoreModules(app, gridCommunityModules, gridEnterpriseModules, char
         console.log(`Serving modules ${module.publishedName} from ./_dev/${module.publishedName} - available at /dev/${module.publishedName}`);
         app.use(`/dev/${module.publishedName}`, express.static(`./_dev/${module.publishedName}`));
     });
+
+    console.log(`Serving modules @ag-grid-community/styles from /_dev/@ag-grid-community/styles - available at /dev/@ag-grid-community/styles`);
+    app.use(`/dev/@ag-grid-community/styles`, express.static(`./_dev/@ag-grid-community/styles`));
+
 }
 
-
 function getTscPath() {
-    return WINDOWS ? 'node_modules\\.bin\\tsc.cmd' : 'node_modules/.bin/tsc';
+    return 'node_modules/.bin/tsc';
 }
 
 function symlinkModules(gridCommunityModules, gridEnterpriseModules, chartCommunityModules) {
@@ -130,17 +129,17 @@ function symlinkModules(gridCommunityModules, gridEnterpriseModules, chartCommun
 
     let linkType = 'symbolic';
 
-    if (WINDOWS) {
-        console.log('creating window links...');
-        linkType = 'junction';
-    }
-
     lnk('../../community-modules/vue/', '_dev/@ag-grid-community', {force: true, type: linkType, rename: 'vue'});
     lnk('../../community-modules/vue3/', '_dev/@ag-grid-community', {force: true, type: linkType, rename: 'vue3'});
     lnk('../../community-modules/angular/', '_dev/@ag-grid-community', {
         force: true,
         type: linkType,
         rename: 'angular'
+    });
+    lnk('../../community-modules/angular-legacy/', '_dev/@ag-grid-community', {
+        force: true,
+        type: linkType,
+        rename: 'angular-legacy'
     });
     lnk('../../community-modules/react/', '_dev/@ag-grid-community', {
         force: true,
@@ -175,6 +174,13 @@ function symlinkModules(gridCommunityModules, gridEnterpriseModules, chartCommun
             });
         });
 
+    lnk('../../community-modules/styles/', '_dev/@ag-grid-community', {
+        force: true,
+        type: linkType,
+        rename: 'styles'
+    });
+
+
     lnk('../../charts-packages/ag-charts-react/', '_dev/', {
         force: true,
         type: linkType,
@@ -184,6 +190,11 @@ function symlinkModules(gridCommunityModules, gridEnterpriseModules, chartCommun
         force: true,
         type: linkType,
         rename: 'ag-charts-angular'
+    });
+    lnk('../../charts-packages/ag-charts-angular-legacy/', '_dev/', {
+        force: true,
+        type: linkType,
+        rename: 'ag-charts-angular-legacy'
     });
     lnk('../../charts-packages/ag-charts-vue/', '_dev/', {
         force: true,
@@ -211,6 +222,11 @@ function symlinkModules(gridCommunityModules, gridEnterpriseModules, chartCommun
         force: true,
         type: linkType,
         rename: 'ag-grid-angular'
+    });
+    lnk('../../grid-packages/ag-grid-angular-legacy/', '_dev/', {
+        force: true,
+        type: linkType,
+        rename: 'ag-grid-angular-legacy'
     });
     lnk('../../grid-packages/ag-grid-react/', '_dev/', {
         force: true,
@@ -249,7 +265,7 @@ async function watchAndGenerateExamples() {
     if (moduleChanged('.')) {
         await generateDocumentationExamples();
 
-        const npm = WINDOWS ? 'npm.cmd' : 'npm';
+        const npm = 'npm';
         cp.spawnSync(npm, ['run', 'hash']);
     } else {
         console.log("Docs contents haven't changed - skipping example generation");
@@ -323,13 +339,6 @@ function updateUtilsSystemJsMappingsForFrameworks(gridCommunityModules, gridEnte
     const utilityFilename = 'documentation/src/components/example-runner/SystemJs.jsx';
     const utilFileContents = fs.readFileSync(utilityFilename, 'UTF-8');
 
-    const cssFiles = glob.sync(`../../community-modules/core/dist/styles/*.css`)
-        .filter(css => !css.includes(".min."))
-        .filter(css => !css.includes("Font"))
-        .filter(css => !css.includes("mixin"))
-        .filter(css => !css.includes("base-rename-legacy-vars"))
-        .map(css => css.replace('../../community-modules/core/dist/styles/', ''));
-
     let updatedUtilFileContents = updateBetweenStrings(utilFileContents,
         '            /* START OF GRID MODULES DEV - DO NOT DELETE */',
         '            /* END OF GRID MODULES DEV - DO NOT DELETE */',
@@ -379,7 +388,7 @@ function updateUtilsSystemJsMappingsForFrameworks(gridCommunityModules, gridEnte
 const getLernaChainBuildInfo = async (skipFrameworks) => {
     const lernaBuildChainInfo = await getFlattenedBuildChainInfo(false, true, true);
 
-    const frameworks = ['angular', 'react', 'vue', 'vue3'];
+    const frameworks = ['angular', 'angular-legacy', 'react', 'vue', 'vue3'];
 
     const filterBuildChain = filter => {
         Object.keys(lernaBuildChainInfo).forEach(packageName => {
@@ -422,17 +431,19 @@ const rebuildPackagesBasedOnChangeState = async (skipSelf = true, skipFrameworks
         })
         .map(changedPackage => skipSelf && lernaBuildChainInfo[changedPackage][0] === changedPackage ? lernaBuildChainInfo[changedPackage].slice(1) : lernaBuildChainInfo[changedPackage]));
 
+
+    if (modulesState["@ag-grid-community/core"].moduleChanged ||
+        modulesState["@ag-grid-community/styles"].moduleChanged) {
+        console.log("Core / Styles have changed - rebuilding CSS");
+        await buildCss();
+    }
+
     const lernaPackagesToRebuild = new Set();
     changedPackages.forEach(lernaPackagesToRebuild.add, lernaPackagesToRebuild);
 
     if (lernaPackagesToRebuild.size > 0) {
         console.log("Rebuilding changed packages...");
-
         await buildPackages(Array.from(lernaPackagesToRebuild));
-
-        if (lernaPackagesToRebuild.has("@ag-grid-community/core")) {
-            await buildCss();
-        }
     } else {
         console.log("No non-core packages are out of date - skipping");
     }
@@ -442,12 +453,13 @@ const watchCoreModules = async (skipFrameworks) => {
     console.log("Watching TS files only...");
     const tsc = getTscPath();
     const tsWatch = cp.spawn(tsc, ["--build", "--preserveWatchOutput", '--watch'], {
-        cwd: WINDOWS ? '..\\..\\' : '../../'
+        cwd: '../../',
+        stdio: 'pipe',
+        encoding: 'buffer'
     });
 
-    tsWatch.stdout.on('data', async (data) => {
-        const output = data.toString().trim();
-        console.log(output);
+    tsWatch.stdout.on('data', await processStdio(async (output) => {
+        console.log("Core Typescript: " + output);
         if (output.includes("Found 0 errors. Watching for file changes.")) {
             await rebuildPackagesBasedOnChangeState(false, skipFrameworks);
 
@@ -455,7 +467,11 @@ const watchCoreModules = async (skipFrameworks) => {
             // hashes on build
             updateCoreModuleHashes();
         }
-    });
+    }));
+
+    tsWatch.stderr.on('data', await processStdio(async (output) => {
+        console.error("Core Typescript: " + output);
+    }));
 
     process.on('exit', () => {
         tsWatch.kill();
@@ -466,17 +482,17 @@ const watchCoreModules = async (skipFrameworks) => {
 };
 
 const updateCoreModuleHashes = () => {
-    const coreModuleRootNames = ['community-modules', 'enterprise-modules'];
-    const exclusions = ['react', 'angular', 'vue', 'vue3', 'polymer'];
+    const coreModuleRootNames = ['community-modules', 'enterprise-modules', 'charts-packages'];
+    const exclusions = ['react', 'angular', 'angular-legacy', 'vue', 'vue3', 'polymer'];
 
     coreModuleRootNames.forEach(moduleRootName => {
-        const moduleRootDirectory = WINDOWS ? `..\\..\\${moduleRootName}\\` : `../../${moduleRootName}/`;
+        const moduleRootDirectory = `../../${moduleRootName}/`;
         const moduleRootSubDirNames = fs.readdirSync(moduleRootDirectory, {
             withFileTypes: true
         })
             .filter(d => d.isDirectory())
             .filter(d => !exclusions.includes(d.name))
-            .map(d => WINDOWS ? `..\\..\\${moduleRootName}\\${d.name}` : `../../${moduleRootName}/${d.name}`);
+            .map(d => `../../${moduleRootName}/${d.name}`);
 
         moduleRootSubDirNames.forEach(moduleRoot => updateModuleChangedHash(moduleRoot));
     });
@@ -487,7 +503,7 @@ const buildCoreModules = async (exitOnError) => {
     const tsc = getTscPath();
     const result = cp.spawnSync(tsc, ['--build'], {
         stdio: 'inherit',
-        cwd: WINDOWS ? '..\\..\\' : '../../'
+        cwd: '../../'
     });
 
     if (result && result.status !== 0) {
@@ -515,8 +531,7 @@ const buildCoreModules = async (exitOnError) => {
 function moduleChanged(moduleRoot) {
     let changed = true;
 
-    // Windows... convert c:\\xxx to /c/xxx - can only work in git bash
-    const resolvedPath = resolve(moduleRoot).replace(/\\/g, '/').replace("C:", "/c");
+    const resolvedPath = resolve(moduleRoot);
 
     const checkResult = cp.spawnSync('sh', ['../../scripts/hashChanged.sh', resolvedPath], {
         stdio: 'pipe',
@@ -531,9 +546,8 @@ function moduleChanged(moduleRoot) {
 }
 
 function updateModuleChangedHash(moduleRoot) {
-    // Windows... convert c:\\xxx to /c/xxx - can only work in git bash
-    const npm = WINDOWS ? 'npm.cmd' : 'npm';
-    const resolvedPath = resolve(moduleRoot).replace(/\\/g, '/').replace("C:", "/c");
+    const npm = 'npm';
+    const resolvedPath = resolve(moduleRoot);
 
     cp.spawnSync(npm, ['run', 'hash'], {cwd: resolvedPath});
 }
@@ -592,7 +606,7 @@ const addWebpackMiddleware = (app) => {
 };
 
 const watchCoreModulesAndCss = async (skipFrameworks) => {
-    watchCss();
+    await watchCss();
     await watchCoreModules(skipFrameworks);
 };
 
@@ -603,16 +617,17 @@ const watchFrameworkModules = async () => {
         '**/node_modules/**/*',
         '**/dist/**/*',
         '**/bundles/**/*',
+        '**/lib/**/*',
         '.hash',
     ];
 
-    const moduleFrameworks = ['angular', 'vue', 'vue3', 'react'];
-    const moduleRootDirectory = WINDOWS ? `..\\..\\community-modules\\` : `../../community-modules/`;
+    const moduleFrameworks = ['angular', 'angular-legacy', 'vue', 'vue3', 'react'];
+    const moduleRootDirectory = `../../community-modules/`;
     moduleFrameworks.forEach(moduleFramework => {
         const frameworkDirectory = resolve(`${moduleRootDirectory}${moduleFramework}`);
 
         const ignoredFolders = [...defaultIgnoreFolders];
-        if (moduleFramework !== 'angular') {
+        if (moduleFramework !== 'angular' && moduleFramework !== 'angular-legacy') {
             ignoredFolders.push('**/lib/**/*');
         }
 
@@ -630,16 +645,19 @@ const serveModuleAndPackages = (app, gridCommunityModules, gridEnterpriseModules
     serveCoreModules(app, gridCommunityModules, gridEnterpriseModules, chartCommunityModules);
 
     servePackage(app, '@ag-grid-community/angular');
+    servePackage(app, '@ag-grid-community/angular-legacy');
     servePackage(app, '@ag-grid-community/vue');
     servePackage(app, '@ag-grid-community/vue3');
     servePackage(app, '@ag-grid-community/react');
     servePackage(app, 'ag-charts-react');
     servePackage(app, 'ag-charts-angular');
+    servePackage(app, 'ag-charts-angular-legacy');
     servePackage(app, 'ag-charts-vue');
     servePackage(app, 'ag-charts-vue3');
     servePackage(app, 'ag-grid-community');
     servePackage(app, 'ag-grid-enterprise');
     servePackage(app, 'ag-grid-angular');
+    servePackage(app, 'ag-grid-angular-legacy');
     servePackage(app, 'ag-grid-vue');
     servePackage(app, 'ag-grid-vue3');
     servePackage(app, 'ag-grid-react');
@@ -651,14 +669,14 @@ const readModulesState = () => {
     const modulesState = {};
 
     moduleRootNames.forEach(moduleRootName => {
-        const moduleRootDirectory = WINDOWS ? `..\\..\\${moduleRootName}\\` : `../../${moduleRootName}/`;
+        const moduleRootDirectory = `../../${moduleRootName}/`;
 
         fs.readdirSync(moduleRootDirectory, {withFileTypes: true})
             .filter(d => d.isDirectory())
             .filter(d => !exclusions.includes(d.name))
-            .map(d => WINDOWS ? `..\\..\\${moduleRootName}\\${d.name}` : `../../${moduleRootName}/${d.name}`)
+            .map(d => `../../${moduleRootName}/${d.name}`)
             .map(d => {
-                const packageName = require(WINDOWS ? `${d}\\package.json` : `${d}/package.json`).name;
+                const packageName = require(`${d}/package.json`).name;
                 modulesState[packageName] = {moduleChanged: moduleChanged(d)};
             });
     });
@@ -667,10 +685,10 @@ const readModulesState = () => {
 };
 
 module.exports = async (skipFrameworks, skipExampleFormatting, done) => {
-    tcpPortUsed.check(EXPRESS_HTTP_PORT)
+    tcpPortUsed.check(EXPRESS_HTTPS_PORT)
         .then(async (inUse) => {
             if (inUse) {
-                console.log(`Port ${EXPRESS_HTTP_PORT} is already in use - please ensure previous instances of docs has shutdown/completed.`);
+                console.log(`Port ${EXPRESS_HTTPS_PORT} is already in use - please ensure previous instances of docs has shutdown/completed.`);
                 console.log(`If you run using npm run docs-xxx and kill it the gulp process will continue until it's finished.`);
                 console.log(`Wait a few seconds for a message that will let you know you can retry.`);
                 console.log(`Alternatively you can try kill all node & gulp processes (ensure you're happy with what will be killed!:`);
@@ -709,9 +727,6 @@ module.exports = async (skipFrameworks, skipExampleFormatting, done) => {
             console.log("Watch Core Modules & CSS");
             await watchCoreModulesAndCss(skipFrameworks);
 
-            console.log("Watch Typescript examples...");
-            await watchValidateExampleTypes();
-
             if (!skipFrameworks) {
                 console.log("Watch Framework Modules");
                 watchFrameworkModules();
@@ -729,6 +744,9 @@ module.exports = async (skipFrameworks, skipExampleFormatting, done) => {
             console.log("Watch and Generate Examples");
             await watchAndGenerateExamples();
             console.log("Examples Generated");
+
+            console.log("Watch Typescript examples...");
+            await watchValidateExampleTypes();
 
             // todo - iterate everything under src and serve it
             // ...or use app.get('/' and handle it that way
@@ -768,9 +786,6 @@ module.exports = async (skipFrameworks, skipExampleFormatting, done) => {
 
                 return server;
             }
-
-            // http server
-            createServer('http', () => http.createServer(app).listen(EXPRESS_HTTP_PORT));
 
             // https server
             createServer('https', () => https.createServer(credentials, app).listen(EXPRESS_HTTPS_PORT));

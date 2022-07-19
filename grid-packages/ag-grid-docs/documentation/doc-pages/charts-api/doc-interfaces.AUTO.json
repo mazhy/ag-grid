@@ -19,6 +19,8 @@
     "axis": { "type": { "returnType": "any", "optional": true } }
   },
   "Size": {},
+  "OffscreenCanvasRenderingContext2D": {},
+  "OffscreenCanvas": {},
   "FontStyle": {},
   "FontWeight": {},
   "FontFamily": {},
@@ -28,6 +30,7 @@
   "CssColor": {},
   "Opacity": {},
   "PixelSize": {},
+  "DataValue": {},
   "AgChartThemePalette": {
     "fills": {
       "description": "/** The array of fills to be used. */",
@@ -145,22 +148,35 @@
       "type": { "returnType": "any", "optional": true }
     }
   },
+  "AgCartesianAxisThemeSpecialOptions": {},
   "AgCartesianAxisThemeOptions": {
     "top": {
       "description": "/** An object with axis theme overrides for the `top` positioned axes. Same configs apply here as one level above. For example, to rotate labels by 45 degrees in 'top' positioned axes one can use `top: { label: { rotation: 45 } } }`. */",
-      "type": { "returnType": "Omit<T, 'position' | 'type'>", "optional": true }
+      "type": {
+        "returnType": "Omit<T, AgCartesianAxisThemeSpecialOptions>",
+        "optional": true
+      }
     },
     "right": {
       "description": "/** An object with axis theme overrides for the `right` positioned axes. Same configs apply here as one level above. */",
-      "type": { "returnType": "Omit<T, 'position' | 'type'>", "optional": true }
+      "type": {
+        "returnType": "Omit<T, AgCartesianAxisThemeSpecialOptions>",
+        "optional": true
+      }
     },
     "bottom": {
       "description": "/** An object with axis theme overrides for the `bottom` positioned axes. Same configs apply here as one level above. */",
-      "type": { "returnType": "Omit<T, 'position' | 'type'>", "optional": true }
+      "type": {
+        "returnType": "Omit<T, AgCartesianAxisThemeSpecialOptions>",
+        "optional": true
+      }
     },
     "left": {
       "description": "/** An object with axis theme overrides for the `left` positioned axes. Same configs apply here as one level above. */",
-      "type": { "returnType": "Omit<T, 'position' | 'type'>", "optional": true }
+      "type": {
+        "returnType": "Omit<T, AgCartesianAxisThemeSpecialOptions>",
+        "optional": true
+      }
     },
     "meta": { "typeParams": ["T"] }
   },
@@ -177,7 +193,7 @@
       "description": "/** Configuration for the chart navigator. */",
       "type": { "returnType": "AgNavigatorOptions", "optional": true }
     },
-    "meta": { "typeParams": ["S"] },
+    "meta": { "typeParams": ["S = AgCartesianSeriesTheme"] },
     "data": {
       "description": "/** The data to render the chart from. If this is not specified, it must be set on individual series instead. */",
       "type": { "returnType": "any[]", "optional": true }
@@ -236,7 +252,7 @@
       "description": "/** Series configurations. */",
       "type": { "returnType": "S", "optional": true }
     },
-    "meta": { "typeParams": ["S"] },
+    "meta": { "typeParams": ["S = AgPolarSeriesTheme"] },
     "data": {
       "description": "/** The data to render the chart from. If this is not specified, it must be set on individual series instead. */",
       "type": { "returnType": "any[]", "optional": true }
@@ -295,7 +311,7 @@
       "description": "/** Series configurations. */",
       "type": { "returnType": "S", "optional": true }
     },
-    "meta": { "typeParams": ["S"] },
+    "meta": { "typeParams": ["S = AgHierarchySeriesTheme"] },
     "data": {
       "description": "/** The data to render the chart from. If this is not specified, it must be set on individual series instead. */",
       "type": { "returnType": "any[]", "optional": true }
@@ -349,6 +365,53 @@
       "type": { "returnType": "string | AgChartTheme", "optional": true }
     }
   },
+  "AgCrossLineThemeOptions": {
+    "enabled": {
+      "description": "/** Whether or not to show the cross line. */",
+      "type": { "returnType": "boolean", "optional": true }
+    },
+    "value": {
+      "description": "/** The data value at which the line should be positioned. This property is used if the crossLine type is `line`. */",
+      "type": { "returnType": "DataValue", "optional": true }
+    },
+    "range": {
+      "description": "/** The range of values from the data used to display lines at a desired chart region. This property is only used for crossLine type `range`. */",
+      "type": { "returnType": "[DataValue, DataValue]", "optional": true }
+    },
+    "fill": {
+      "description": "/** The colour to use for the fill of the range. */",
+      "type": { "returnType": "CssColor", "optional": true }
+    },
+    "fillOpacity": {
+      "description": "/** The opacity of the fill for the range. */",
+      "type": { "returnType": "Opacity", "optional": true }
+    },
+    "stroke": {
+      "description": "/** The colour of the stroke for the lines. */",
+      "type": { "returnType": "CssColor", "optional": true }
+    },
+    "strokeWidth": {
+      "description": "/** The width in pixels of the stroke for the lines. */",
+      "type": { "returnType": "PixelSize", "optional": true }
+    },
+    "strokeOpacity": {
+      "description": "/** The opacity of the stroke for the lines. */",
+      "type": { "returnType": "Opacity", "optional": true }
+    },
+    "lineDash": {
+      "description": "/** Defines how the line stroke is rendered. Every number in the array specifies the length in pixels of alternating dashes and gaps. For example, `[6, 3]` means dashes with a length of `6` pixels with gaps between of `3` pixels. */",
+      "type": { "returnType": "PixelSize[]", "optional": true }
+    },
+    "label": {
+      "description": "/** Configuration for the crossLine label. */",
+      "type": { "returnType": "AgCrossLineLabelOptions", "optional": true }
+    }
+  },
+  "AgCartesianAxesCrossLineThemeOptions": {
+    "crossLines": {
+      "type": { "returnType": "AgCrossLineThemeOptions", "optional": true }
+    }
+  },
   "AgNumberAxisThemeOptions": {
     "nice": {
       "description": "/** If 'true', the range will be rounded up to ensure nice equal spacing between the ticks. */",
@@ -369,30 +432,33 @@
     "top": {
       "description": "/** An object with axis theme overrides for the `top` positioned axes. Same configs apply here as one level above. For example, to rotate labels by 45 degrees in 'top' positioned axes one can use `top: { label: { rotation: 45 } } }`. */",
       "type": {
-        "returnType": "Omit<AgNumberAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgNumberAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "right": {
       "description": "/** An object with axis theme overrides for the `right` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgNumberAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgNumberAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "bottom": {
       "description": "/** An object with axis theme overrides for the `bottom` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgNumberAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgNumberAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "left": {
       "description": "/** An object with axis theme overrides for the `left` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgNumberAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgNumberAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
+    },
+    "crossLines": {
+      "type": { "returnType": "AgCrossLineThemeOptions", "optional": true }
     },
     "position": {
       "description": "/** The position on the chart where the axis should be rendered. */",
@@ -444,30 +510,33 @@
     "top": {
       "description": "/** An object with axis theme overrides for the `top` positioned axes. Same configs apply here as one level above. For example, to rotate labels by 45 degrees in 'top' positioned axes one can use `top: { label: { rotation: 45 } } }`. */",
       "type": {
-        "returnType": "Omit<AgLogAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgLogAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "right": {
       "description": "/** An object with axis theme overrides for the `right` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgLogAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgLogAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "bottom": {
       "description": "/** An object with axis theme overrides for the `bottom` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgLogAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgLogAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "left": {
       "description": "/** An object with axis theme overrides for the `left` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgLogAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgLogAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
+    },
+    "crossLines": {
+      "type": { "returnType": "AgCrossLineThemeOptions", "optional": true }
     },
     "position": {
       "description": "/** The position on the chart where the axis should be rendered. */",
@@ -505,30 +574,33 @@
     "top": {
       "description": "/** An object with axis theme overrides for the `top` positioned axes. Same configs apply here as one level above. For example, to rotate labels by 45 degrees in 'top' positioned axes one can use `top: { label: { rotation: 45 } } }`. */",
       "type": {
-        "returnType": "Omit<AgCategoryAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "right": {
       "description": "/** An object with axis theme overrides for the `right` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgCategoryAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "bottom": {
       "description": "/** An object with axis theme overrides for the `bottom` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgCategoryAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "left": {
       "description": "/** An object with axis theme overrides for the `left` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgCategoryAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
+    },
+    "crossLines": {
+      "type": { "returnType": "AgCrossLineThemeOptions", "optional": true }
     },
     "position": {
       "description": "/** The position on the chart where the axis should be rendered. */",
@@ -564,30 +636,33 @@
     "top": {
       "description": "/** An object with axis theme overrides for the `top` positioned axes. Same configs apply here as one level above. For example, to rotate labels by 45 degrees in 'top' positioned axes one can use `top: { label: { rotation: 45 } } }`. */",
       "type": {
-        "returnType": "Omit<AgGroupedCategoryAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgGroupedCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "right": {
       "description": "/** An object with axis theme overrides for the `right` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgGroupedCategoryAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgGroupedCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "bottom": {
       "description": "/** An object with axis theme overrides for the `bottom` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgGroupedCategoryAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgGroupedCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "left": {
       "description": "/** An object with axis theme overrides for the `left` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgGroupedCategoryAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgGroupedCategoryAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
+    },
+    "crossLines": {
+      "type": { "returnType": "AgCrossLineThemeOptions", "optional": true }
     },
     "position": {
       "description": "/** The position on the chart where the axis should be rendered. */",
@@ -627,30 +702,33 @@
     "top": {
       "description": "/** An object with axis theme overrides for the `top` positioned axes. Same configs apply here as one level above. For example, to rotate labels by 45 degrees in 'top' positioned axes one can use `top: { label: { rotation: 45 } } }`. */",
       "type": {
-        "returnType": "Omit<AgTimeAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgTimeAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "right": {
       "description": "/** An object with axis theme overrides for the `right` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgTimeAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgTimeAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "bottom": {
       "description": "/** An object with axis theme overrides for the `bottom` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgTimeAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgTimeAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
     },
     "left": {
       "description": "/** An object with axis theme overrides for the `left` positioned axes. Same configs apply here as one level above. */",
       "type": {
-        "returnType": "Omit<AgTimeAxisOptions, 'position' | 'type'>",
+        "returnType": "Omit<AgTimeAxisOptions, AgCartesianAxisThemeSpecialOptions>",
         "optional": true
       }
+    },
+    "crossLines": {
+      "type": { "returnType": "AgCrossLineThemeOptions", "optional": true }
     },
     "position": {
       "description": "/** The position on the chart where the axis should be rendered. */",
@@ -800,9 +878,6 @@
       "description": "/** Whether or not the title should be shown. */",
       "type": { "returnType": "boolean", "optional": true }
     },
-    "padding": {
-      "type": { "returnType": "AgChartPaddingOptions", "optional": true }
-    },
     "text": {
       "description": "/** The text to show in the title. */",
       "type": { "returnType": "string", "optional": true }
@@ -930,6 +1005,10 @@
     }
   },
   "AgChartLegendLabelOptions": {
+    "maxLength": {
+      "description": "/** If the label text exceeds the maximum length, it will be truncated and an ellipsis will be appended to indicate this. */",
+      "type": { "returnType": "number", "optional": true }
+    },
     "color": {
       "description": "/** The colour of the text. */",
       "type": { "returnType": "CssColor", "optional": true }
@@ -968,6 +1047,10 @@
       "description": "/** Configuration for the legend labels. */",
       "type": { "returnType": "AgChartLegendLabelOptions", "optional": true }
     },
+    "maxWidth": {
+      "description": "/** Used to constrain the width of legend items. */",
+      "type": { "returnType": "PixelSize", "optional": true }
+    },
     "paddingX": {
       "description": "/** The horizontal spacing in pixels to use between legend items. */",
       "type": { "returnType": "PixelSize", "optional": true }
@@ -975,6 +1058,26 @@
     "paddingY": {
       "description": "/** The vertical spacing in pixels to use between legend items. */",
       "type": { "returnType": "PixelSize", "optional": true }
+    }
+  },
+  "AgChartLegendClickEvent": {
+    "itemId": {
+      "description": "/** Legend item id - based on series id. */",
+      "type": { "returnType": "string", "optional": false }
+    },
+    "enabled": {
+      "description": "/** Whether the legend item is currently enabled or not. */",
+      "type": { "returnType": "boolean", "optional": false }
+    }
+  },
+  "AgChartLegendListeners": {
+    "legendItemClick": {
+      "description": "/** The listener to call when a legend item is clicked. */",
+      "type": {
+        "arguments": { "event": "AgChartLegendClickEvent" },
+        "returnType": "void",
+        "optional": true
+      }
     }
   },
   "AgChartLegendOptions": {
@@ -993,6 +1096,10 @@
     "item": {
       "description": "/** Configuration for the legend items that consist of a marker and a label. */",
       "type": { "returnType": "AgChartLegendItemOptions", "optional": true }
+    },
+    "listeners": {
+      "description": "/** Optional callbacks for specific legend-related events. */",
+      "type": { "returnType": "AgChartLegendListeners", "optional": true }
     }
   },
   "AgChartTooltipOptions": {
@@ -1028,11 +1135,7 @@
       "description": "/** The listener to call when a node (marker, column, bar, tile or a pie slice) in any series is clicked. In case a chart has multiple series, the chart's `seriesNodeClick` event can be used to listen to `nodeClick` events of all the series at once. */",
       "type": {
         "arguments": {
-          "type": "'seriesNodeClick'",
-          "series": "any",
-          "datum": "any",
-          "xKey": "string",
-          "yKey": "string"
+          "event": "{ type: 'seriesNodeClick'; series: any; datum: any; xKey: string; yKey: string; }"
         },
         "returnType": "any",
         "optional": false
@@ -1127,7 +1230,7 @@
   },
   "AgAxisNumberTickOptions": {
     "count": {
-      "description": "/** A hint of how many ticks to use across an axis. The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given. */",
+      "description": "/** A hint of how many ticks to use across an axis.\n * The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given. */",
       "type": { "returnType": "number", "optional": true }
     },
     "width": {
@@ -1145,7 +1248,7 @@
   },
   "AgAxisTimeTickOptions": {
     "count": {
-      "description": "/** A hint of how many ticks to use across an axis. The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given.<br/><br/>The following intervals from the `agCharts.time` namespace can be used: `millisecond, second, minute, hour, day, sunday, monday, tuesday, wednesday, thursday, friday, saturday, month, year, utcMinute, utcHour, utcDay, utcMonth, utcYear`. And derived intervals can be created by using the `every` method on the default ones. For example, `agCharts.time.month.every(2)` will return a derived interval that will make the axis place ticks for every other month.<br/><br/> */",
+      "description": "/** A hint of how many ticks to use across an axis.\n * The axis is not guaranteed to use exactly this number of ticks, but will try to use a number of ticks that is close to the number given.\n * The following intervals from the `agCharts.time` namespace can be used:\n * `millisecond, second, minute, hour, day, sunday, monday, tuesday, wednesday, thursday, friday, saturday, month, year, utcMinute, utcHour, utcDay, utcMonth, utcYear`.\n * Derived intervals can be created by using the `every` method on the default ones. For example, `agCharts.time.month.every(2)` will return a derived interval that will make the axis place ticks for every other month. */",
       "type": { "returnType": "any", "optional": true }
     },
     "width": {
@@ -1218,7 +1321,7 @@
       "description": "/** Function used to render axis labels. If `value` is a number, `fractionDigits` will also be provided, which indicates the number of fractional digits used in the step between ticks; for example, a tick step of `0.0005` would have `fractionDigits` set to `4` */",
       "type": {
         "arguments": { "params": "AgAxisLabelFormatterParams" },
-        "returnType": "string",
+        "returnType": "string | undefined",
         "optional": true
       }
     }
@@ -1255,12 +1358,105 @@
       "description": "/** Configuration of the lines used to form the grid in the chart area. */",
       "type": { "returnType": "AgAxisGridStyle[]", "optional": true }
     },
+    "crossLines": {
+      "description": "/** Add cross lines or regions corresponding to data values. */",
+      "type": { "returnType": "AgCrossLineOptions[]", "optional": true }
+    },
     "keys": { "type": { "returnType": "string[]", "optional": true } },
     "thickness": {
       "description": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */",
       "type": { "returnType": "PixelSize", "optional": true }
     }
   },
+  "AgCrossLineOptions": {
+    "enabled": {
+      "description": "/** Whether or not to show the cross line. */",
+      "type": { "returnType": "boolean", "optional": true }
+    },
+    "type": {
+      "description": "/** Type of cross line to render. */",
+      "type": { "returnType": "'line' | 'range'", "optional": false }
+    },
+    "value": {
+      "description": "/** The data value at which the line should be positioned. This property is used if the crossLine type is `line`. */",
+      "type": { "returnType": "DataValue", "optional": true }
+    },
+    "range": {
+      "description": "/** The range of values from the data used to display lines at a desired chart region. This property is only used for crossLine type `range`. */",
+      "type": { "returnType": "[DataValue, DataValue]", "optional": true }
+    },
+    "fill": {
+      "description": "/** The colour to use for the fill of the range. */",
+      "type": { "returnType": "CssColor", "optional": true }
+    },
+    "fillOpacity": {
+      "description": "/** The opacity of the fill for the range. */",
+      "type": { "returnType": "Opacity", "optional": true }
+    },
+    "stroke": {
+      "description": "/** The colour of the stroke for the lines. */",
+      "type": { "returnType": "CssColor", "optional": true }
+    },
+    "strokeWidth": {
+      "description": "/** The width in pixels of the stroke for the lines. */",
+      "type": { "returnType": "PixelSize", "optional": true }
+    },
+    "strokeOpacity": {
+      "description": "/** The opacity of the stroke for the lines. */",
+      "type": { "returnType": "Opacity", "optional": true }
+    },
+    "lineDash": {
+      "description": "/** Defines how the line stroke is rendered. Every number in the array specifies the length in pixels of alternating dashes and gaps. For example, `[6, 3]` means dashes with a length of `6` pixels with gaps between of `3` pixels. */",
+      "type": { "returnType": "PixelSize[]", "optional": true }
+    },
+    "label": {
+      "description": "/** Configuration for the crossLine label. */",
+      "type": { "returnType": "AgCrossLineLabelOptions", "optional": true }
+    }
+  },
+  "AgCrossLineLabelOptions": {
+    "enabled": {
+      "description": "/** Whether or not to show the cross line label. */",
+      "type": { "returnType": "boolean", "optional": true }
+    },
+    "text": {
+      "description": "/** The text to show in the label. */",
+      "type": { "returnType": "string", "optional": true }
+    },
+    "fontStyle": {
+      "description": "/** The font style to use for the label. */",
+      "type": { "returnType": "FontStyle", "optional": true }
+    },
+    "fontWeight": {
+      "description": "/** The font weight to use for the label. */",
+      "type": { "returnType": "FontWeight", "optional": true }
+    },
+    "fontSize": {
+      "description": "/** The font size in pixels to use for the label. */",
+      "type": { "returnType": "FontSize", "optional": true }
+    },
+    "fontFamily": {
+      "description": "/** The font family to use for the label. */",
+      "type": { "returnType": "FontFamily", "optional": true }
+    },
+    "padding": {
+      "description": "/** Padding in pixels between the label and the edge of the crossLine. */",
+      "type": { "returnType": "PixelSize", "optional": true }
+    },
+    "color": {
+      "description": "/** The colour to use for the label. */",
+      "type": { "returnType": "CssColor", "optional": true }
+    },
+    "position": {
+      "description": "/** The position of the crossLine label. */",
+      "type": { "returnType": "AgCrossLineLabelPosition", "optional": true }
+    },
+    "rotation": {
+      "description": "/** The rotation of the crossLine label in degrees. */",
+      "type": { "returnType": "number", "optional": true }
+    }
+  },
+  "AgCrossLineLabelPosition": {},
   "AgNumberAxisOptions": {
     "type": { "type": { "returnType": "'number'", "optional": false } },
     "nice": {
@@ -1298,6 +1494,10 @@
     "gridStyle": {
       "description": "/** Configuration of the lines used to form the grid in the chart area. */",
       "type": { "returnType": "AgAxisGridStyle[]", "optional": true }
+    },
+    "crossLines": {
+      "description": "/** Add cross lines or regions corresponding to data values. */",
+      "type": { "returnType": "AgCrossLineOptions[]", "optional": true }
     },
     "keys": { "type": { "returnType": "string[]", "optional": true } },
     "thickness": {
@@ -1347,6 +1547,10 @@
       "description": "/** Configuration of the lines used to form the grid in the chart area. */",
       "type": { "returnType": "AgAxisGridStyle[]", "optional": true }
     },
+    "crossLines": {
+      "description": "/** Add cross lines or regions corresponding to data values. */",
+      "type": { "returnType": "AgCrossLineOptions[]", "optional": true }
+    },
     "keys": { "type": { "returnType": "string[]", "optional": true } },
     "thickness": {
       "description": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */",
@@ -1381,6 +1585,10 @@
       "description": "/** Configuration of the lines used to form the grid in the chart area. */",
       "type": { "returnType": "AgAxisGridStyle[]", "optional": true }
     },
+    "crossLines": {
+      "description": "/** Add cross lines or regions corresponding to data values. */",
+      "type": { "returnType": "AgCrossLineOptions[]", "optional": true }
+    },
     "keys": { "type": { "returnType": "string[]", "optional": true } },
     "thickness": {
       "description": "/** If set to a non-zero value, the axis will have the specified thickness regardless of label size. */",
@@ -1414,6 +1622,10 @@
     "gridStyle": {
       "description": "/** Configuration of the lines used to form the grid in the chart area. */",
       "type": { "returnType": "AgAxisGridStyle[]", "optional": true }
+    },
+    "crossLines": {
+      "description": "/** Add cross lines or regions corresponding to data values. */",
+      "type": { "returnType": "AgCrossLineOptions[]", "optional": true }
     },
     "keys": { "type": { "returnType": "string[]", "optional": true } },
     "thickness": {
@@ -1450,6 +1662,10 @@
     "gridStyle": {
       "description": "/** Configuration of the lines used to form the grid in the chart area. */",
       "type": { "returnType": "AgAxisGridStyle[]", "optional": true }
+    },
+    "crossLines": {
+      "description": "/** Add cross lines or regions corresponding to data values. */",
+      "type": { "returnType": "AgCrossLineOptions[]", "optional": true }
     },
     "keys": { "type": { "returnType": "string[]", "optional": true } },
     "thickness": {
@@ -1537,7 +1753,7 @@
     "listeners": {
       "description": "/** A map of event names to event listeners. */",
       "type": {
-        "returnType": "AgBaseSeriesListeners | {[key: string]: Function}",
+        "returnType": "AgBaseSeriesListeners | { [key: string]: Function }",
         "optional": true
       }
     },
@@ -1613,6 +1829,10 @@
       "description": "/** The colour to use for marker fills. If this is not specified, the markers will take their fill from the series. */",
       "type": { "returnType": "CssColor", "optional": true }
     },
+    "fillOpacity": {
+      "description": "/** Opacity of the marker fills. */",
+      "type": { "returnType": "Opacity", "optional": true }
+    },
     "stroke": {
       "description": "/** The colour to use for marker strokes. If this is not specified, the markers will take their stroke from the series. */",
       "type": { "returnType": "CssColor", "optional": true }
@@ -1621,12 +1841,8 @@
       "description": "/** The width in pixels of the marker stroke. If this is not specified, the markers will take their stroke width from the series. */",
       "type": { "returnType": "PixelSize", "optional": true }
     },
-    "fillOpacity": {
-      "description": "/** */",
-      "type": { "returnType": "Opacity", "optional": true }
-    },
     "strokeOpacity": {
-      "description": "/** */",
+      "description": "/** Opacity of the marker strokes. */",
       "type": { "returnType": "Opacity", "optional": true }
     }
   },
@@ -1683,6 +1899,10 @@
       "description": "/** The colour to use for marker fills. If this is not specified, the markers will take their fill from the series. */",
       "type": { "returnType": "CssColor", "optional": true }
     },
+    "fillOpacity": {
+      "description": "/** Opacity of the marker fills. */",
+      "type": { "returnType": "Opacity", "optional": true }
+    },
     "stroke": {
       "description": "/** The colour to use for marker strokes. If this is not specified, the markers will take their stroke from the series. */",
       "type": { "returnType": "CssColor", "optional": true }
@@ -1691,12 +1911,8 @@
       "description": "/** The width in pixels of the marker stroke. If this is not specified, the markers will take their stroke width from the series. */",
       "type": { "returnType": "PixelSize", "optional": true }
     },
-    "fillOpacity": {
-      "description": "/** */",
-      "type": { "returnType": "Opacity", "optional": true }
-    },
     "strokeOpacity": {
-      "description": "/** */",
+      "description": "/** Opacity of the marker strokes. */",
       "type": { "returnType": "Opacity", "optional": true }
     }
   },
@@ -1728,6 +1944,10 @@
       "description": "/** The colour to use for marker fills. If this is not specified, the markers will take their fill from the series. */",
       "type": { "returnType": "CssColor", "optional": true }
     },
+    "fillOpacity": {
+      "description": "/** Opacity of the marker fills. */",
+      "type": { "returnType": "Opacity", "optional": true }
+    },
     "stroke": {
       "description": "/** The colour to use for marker strokes. If this is not specified, the markers will take their stroke from the series. */",
       "type": { "returnType": "CssColor", "optional": true }
@@ -1736,12 +1956,8 @@
       "description": "/** The width in pixels of the marker stroke. If this is not specified, the markers will take their stroke width from the series. */",
       "type": { "returnType": "PixelSize", "optional": true }
     },
-    "fillOpacity": {
-      "description": "/** */",
-      "type": { "returnType": "Opacity", "optional": true }
-    },
     "strokeOpacity": {
-      "description": "/** */",
+      "description": "/** Opacity of the marker strokes. */",
       "type": { "returnType": "Opacity", "optional": true }
     }
   },
@@ -1872,7 +2088,7 @@
     "listeners": {
       "description": "/** A map of event names to event listeners. */",
       "type": {
-        "returnType": "AgBaseSeriesListeners | {[key: string]: Function}",
+        "returnType": "AgBaseSeriesListeners | { [key: string]: Function }",
         "optional": true
       }
     },
@@ -1921,6 +2137,55 @@
       "type": { "returnType": "CssColor", "optional": true }
     }
   },
+  "AgScatterSeriesMarker": {
+    "domain": {
+      "description": "/** If sizeKey is used, explicitly specifies the extent of the domain of it's values. */",
+      "type": { "returnType": "[number, number]", "optional": true }
+    },
+    "formatter": {
+      "description": "/** Function used to return formatting for individual markers, based on the supplied information. If the current marker is highlighted, the `highlighted` property will be set to `true`; make sure to check this if you want to differentiate between the highlighted and un-highlighted states. */",
+      "type": {
+        "returnType": "AgCartesianSeriesMarkerFormatter",
+        "optional": true
+      }
+    },
+    "enabled": {
+      "description": "/** Whether or not to show markers. */",
+      "type": { "returnType": "boolean", "optional": true }
+    },
+    "shape": {
+      "description": "/** The shape to use for the markers. You can also supply a custom marker by providing a `Marker` subclass. */",
+      "type": { "returnType": "MarkerShape", "optional": true }
+    },
+    "size": {
+      "description": "/** The size in pixels of the markers. */",
+      "type": { "returnType": "PixelSize", "optional": true }
+    },
+    "maxSize": {
+      "description": "/** For series where the size of the marker is determined by the data, this determines the largest size a marker can be in pixels. */",
+      "type": { "returnType": "PixelSize", "optional": true }
+    },
+    "fill": {
+      "description": "/** The colour to use for marker fills. If this is not specified, the markers will take their fill from the series. */",
+      "type": { "returnType": "CssColor", "optional": true }
+    },
+    "fillOpacity": {
+      "description": "/** Opacity of the marker fills. */",
+      "type": { "returnType": "Opacity", "optional": true }
+    },
+    "stroke": {
+      "description": "/** The colour to use for marker strokes. If this is not specified, the markers will take their stroke from the series. */",
+      "type": { "returnType": "CssColor", "optional": true }
+    },
+    "strokeWidth": {
+      "description": "/** The width in pixels of the marker stroke. If this is not specified, the markers will take their stroke width from the series. */",
+      "type": { "returnType": "PixelSize", "optional": true }
+    },
+    "strokeOpacity": {
+      "description": "/** Opacity of the marker strokes. */",
+      "type": { "returnType": "Opacity", "optional": true }
+    }
+  },
   "AgScatterSeriesOptions": {
     "type": {
       "description": "/** Configuration for the treemap series. */",
@@ -1928,7 +2193,7 @@
     },
     "marker": {
       "description": "/** Configuration for the markers used in the series. */",
-      "type": { "returnType": "AgCartesianSeriesMarker", "optional": true }
+      "type": { "returnType": "AgScatterSeriesMarker", "optional": true }
     },
     "label": {
       "description": "/** Configuration for the labels shown on top of data points. */",
@@ -2013,7 +2278,7 @@
     "listeners": {
       "description": "/** A map of event names to event listeners. */",
       "type": {
-        "returnType": "AgBaseSeriesListeners | {[key: string]: Function}",
+        "returnType": "AgBaseSeriesListeners | { [key: string]: Function }",
         "optional": true
       }
     },
@@ -2169,7 +2434,7 @@
     "listeners": {
       "description": "/** A map of event names to event listeners. */",
       "type": {
-        "returnType": "AgBaseSeriesListeners | {[key: string]: Function}",
+        "returnType": "AgBaseSeriesListeners | { [key: string]: Function }",
         "optional": true
       }
     },
@@ -2358,7 +2623,7 @@
     "listeners": {
       "description": "/** A map of event names to event listeners. */",
       "type": {
-        "returnType": "AgBaseSeriesListeners | {[key: string]: Function}",
+        "returnType": "AgBaseSeriesListeners | { [key: string]: Function }",
         "optional": true
       }
     },
@@ -2511,7 +2776,7 @@
     "listeners": {
       "description": "/** A map of event names to event listeners. */",
       "type": {
-        "returnType": "AgBaseSeriesListeners | {[key: string]: Function}",
+        "returnType": "AgBaseSeriesListeners | { [key: string]: Function }",
         "optional": true
       }
     },
@@ -2587,9 +2852,6 @@
     "enabled": {
       "description": "/** Whether or not the title should be shown. */",
       "type": { "returnType": "boolean", "optional": true }
-    },
-    "padding": {
-      "type": { "returnType": "AgChartPaddingOptions", "optional": true }
     },
     "text": {
       "description": "/** The text to show in the title. */",
@@ -2708,6 +2970,14 @@
       "description": "/** The offset in pixels of the inner radius of the series. Used to construct doughnut charts. If this is not given, or a value of zero is given, a pie chart will be rendered. */",
       "type": { "returnType": "PixelSize", "optional": true }
     },
+    "radiusMin": {
+      "description": "/** Override of the automatically determined minimum radiusKey value from the data. */",
+      "type": { "returnType": "number", "optional": true }
+    },
+    "radiusMax": {
+      "description": "/** Override of the automatically determined maximum radiusKey value from the data. */",
+      "type": { "returnType": "number", "optional": true }
+    },
     "shadow": {
       "description": "/** Configuration for the shadow used behind the chart series. */",
       "type": { "returnType": "AgDropShadowOptions", "optional": true }
@@ -2742,7 +3012,7 @@
     "listeners": {
       "description": "/** A map of event names to event listeners. */",
       "type": {
-        "returnType": "AgBaseSeriesListeners | {[key: string]: Function}",
+        "returnType": "AgBaseSeriesListeners | { [key: string]: Function }",
         "optional": true
       }
     },
@@ -2918,7 +3188,7 @@
     "listeners": {
       "description": "/** A map of event names to event listeners. */",
       "type": {
-        "returnType": "AgBaseSeriesListeners | {[key: string]: Function}",
+        "returnType": "AgBaseSeriesListeners | { [key: string]: Function }",
         "optional": true
       }
     },
@@ -3128,8 +3398,9 @@
   "ChartType": {},
   "AgChartType": { "meta": { "typeParams": ["T"] } },
   "ChartOptionType": { "meta": { "typeParams": ["T extends ChartType"] } },
-  "SeriesOptionType": {},
+  "SeriesOptionType": { "meta": { "typeParams": ["T extends Series"] } },
   "AxisOptionType": { "meta": { "typeParams": ["T extends Axis<any, any>"] } },
+  "ObservableLike": {},
   "ChartClickEvent": {
     "event": { "type": { "returnType": "MouseEvent", "optional": false } },
     "source": { "type": { "returnType": "Chart", "optional": false } },
@@ -3146,7 +3417,6 @@
     "backgroundColor": { "type": { "returnType": "string", "optional": true } }
   },
   "ChartUpdateType": {},
-  "Point": {},
   "ChartAxisDirection": {},
   "ChartAxisPosition": {},
   "ChartAxisMeta": {
@@ -3156,6 +3426,20 @@
     },
     "boundSeries": { "type": { "returnType": "Series[]", "optional": false } }
   },
+  "CrossLinePathData": {
+    "points": { "type": { "returnType": "Point[]", "optional": false } }
+  },
+  "CrossLineType": {},
+  "CrossLineLabelPosition": {},
+  "Point": {
+    "x": { "type": { "returnType": "number", "optional": false } },
+    "y": { "type": { "returnType": "number", "optional": false } }
+  },
+  "CoordinatesFnOpts": {},
+  "CoordinatesFn": {},
+  "PositionCalcFns": {},
+  "LabelTranslationDirection": {},
+  "CrossLineTranslationDirection": {},
   "GroupedCategoryChartAxis": {},
   "LegendDatum": {
     "id": { "type": { "returnType": "string", "optional": false } },
@@ -3174,13 +3458,6 @@
       }
     }
   },
-  "LegendClickEvent": {
-    "event": { "type": { "returnType": "MouseEvent", "optional": false } },
-    "itemId": { "type": { "returnType": "string", "optional": false } },
-    "enabled": { "type": { "returnType": "boolean", "optional": false } },
-    "source": { "type": { "returnType": "Legend", "optional": false } },
-    "type": { "type": { "returnType": "string", "optional": false } }
-  },
   "LegendOrientation": {},
   "LegendPosition": {},
   "LegendLabelFormatterParams": {
@@ -3197,6 +3474,24 @@
     }
   },
   "SeriesOptions": {},
+  "ReduceConfig": {
+    "outputProp": { "type": { "returnType": "string", "optional": false } },
+    "reducer": {
+      "type": {
+        "arguments": {
+          "r": "T",
+          "n": "any",
+          "idx": "number",
+          "length": "number"
+        },
+        "returnType": "T",
+        "optional": false
+      }
+    },
+    "start": { "type": { "returnType": "T", "optional": false } },
+    "seriesType": { "type": { "returnType": "string[]", "optional": true } },
+    "meta": { "typeParams": ["T"] }
+  },
   "ThemeMap": {},
   "Transforms": {
     "meta": {
@@ -3216,7 +3511,7 @@
   "FillSelectionDatum": {
     "itemId": { "type": { "returnType": "string", "optional": false } },
     "points": {
-      "type": { "returnType": "{ x: number, y: number }[]", "optional": false }
+      "type": { "returnType": "{ x: number; y: number }[]", "optional": false }
     }
   },
   "StrokeSelectionDatum": {
@@ -3225,7 +3520,7 @@
     },
     "itemId": { "type": { "returnType": "string", "optional": false } },
     "points": {
-      "type": { "returnType": "{ x: number, y: number }[]", "optional": false }
+      "type": { "returnType": "{ x: number; y: number }[]", "optional": false }
     }
   },
   "AreaSeriesNodeClickEvent": {
@@ -3248,7 +3543,7 @@
     "stroke": { "type": { "returnType": "string", "optional": true } },
     "yKey": { "type": { "returnType": "string", "optional": false } },
     "yValue": { "type": { "returnType": "number", "optional": false } },
-    "series": { "type": { "returnType": "Series", "optional": false } },
+    "series": { "type": { "returnType": "Series<any>", "optional": false } },
     "itemId": { "type": { "returnType": "any", "optional": true } },
     "datum": { "type": { "returnType": "any", "optional": false } }
   },
@@ -3271,6 +3566,8 @@
   "Coordinate": {},
   "CumulativeValue": {},
   "ProcessedXDatum": {},
+  "AreaSeriesTag": {},
+  "AreaSeriesNodeDataContext": {},
   "BarSeriesNodeClickEvent": {
     "type": { "type": { "returnType": "'nodeClick'", "optional": false } },
     "event": { "type": { "returnType": "MouseEvent", "optional": false } },
@@ -3301,6 +3598,7 @@
     "height": { "type": { "returnType": "number", "optional": false } },
     "fill": { "type": { "returnType": "string", "optional": true } },
     "stroke": { "type": { "returnType": "string", "optional": true } },
+    "colorIndex": { "type": { "returnType": "number", "optional": false } },
     "strokeWidth": { "type": { "returnType": "number", "optional": false } },
     "label": {
       "type": {
@@ -3308,12 +3606,12 @@
         "optional": true
       }
     },
-    "series": { "type": { "returnType": "Series", "optional": false } },
+    "series": { "type": { "returnType": "Series<any>", "optional": false } },
     "itemId": { "type": { "returnType": "any", "optional": true } },
     "datum": { "type": { "returnType": "any", "optional": false } },
     "point": {
       "type": {
-        "returnType": "{ // in local (series) coordinates\n        readonly x: number;\n        readonly y: number;\n    }",
+        "returnType": "{\n        // in local (series) coordinates\n        readonly x: number;\n        readonly y: number;\n    }",
         "optional": true
       }
     }
@@ -3333,6 +3631,57 @@
     "fill": { "type": { "returnType": "string", "optional": true } },
     "stroke": { "type": { "returnType": "string", "optional": true } },
     "strokeWidth": { "type": { "returnType": "number", "optional": true } }
+  },
+  "NodeDataSelection": {
+    "meta": {
+      "typeParams": [
+        "N extends Node",
+        "ContextType extends SeriesNodeDataContext"
+      ]
+    }
+  },
+  "LabelDataSelection": {
+    "meta": {
+      "typeParams": [
+        "N extends Node",
+        "ContextType extends SeriesNodeDataContext"
+      ]
+    }
+  },
+  "SubGroup": {
+    "paths": { "type": { "returnType": "Path[]", "optional": false } },
+    "group": { "type": { "returnType": "Group", "optional": false } },
+    "pickGroup": { "type": { "returnType": "Group", "optional": false } },
+    "markerGroup": { "type": { "returnType": "Group", "optional": true } },
+    "datumSelection": {
+      "type": {
+        "returnType": "NodeDataSelection<SceneNodeType, C>",
+        "optional": false
+      }
+    },
+    "labelSelection": {
+      "type": { "returnType": "LabelDataSelection<Text, C>", "optional": false }
+    },
+    "markerSelection": {
+      "type": { "returnType": "NodeDataSelection<Marker, C>", "optional": true }
+    },
+    "meta": {
+      "typeParams": [
+        "C extends SeriesNodeDataContext",
+        "SceneNodeType extends Node"
+      ]
+    }
+  },
+  "PickGroupInclude": {},
+  "SeriesFeature": {},
+  "SeriesOpts": {
+    "pickGroupIncludes": {
+      "type": { "returnType": "PickGroupInclude[]", "optional": false }
+    },
+    "pathsPerSeries": { "type": { "returnType": "number", "optional": false } },
+    "features": {
+      "type": { "returnType": "SeriesFeature[]", "optional": false }
+    }
   },
   "CartesianSeriesMarkerFormat": {
     "fill": { "type": { "returnType": "string", "optional": true } },
@@ -3365,12 +3714,12 @@
         "optional": true
       }
     },
-    "series": { "type": { "returnType": "Series", "optional": false } },
+    "series": { "type": { "returnType": "Series<any>", "optional": false } },
     "itemId": { "type": { "returnType": "any", "optional": true } },
     "datum": { "type": { "returnType": "any", "optional": false } },
     "point": {
       "type": {
-        "returnType": "{ // in local (series) coordinates\n        readonly x: number;\n        readonly y: number;\n    }",
+        "returnType": "{\n        // in local (series) coordinates\n        readonly x: number;\n        readonly y: number;\n    }",
         "optional": true
       }
     }
@@ -3389,7 +3738,7 @@
   "LineNodeDatum": {
     "point": {
       "type": {
-        "returnType": "{\n        readonly x: number;\n        readonly y: number;\n    }",
+        "returnType": "{\n        readonly moveTo: boolean;\n        readonly x: number;\n        readonly y: number;\n    }",
         "optional": false
       }
     },
@@ -3399,7 +3748,7 @@
         "optional": true
       }
     },
-    "series": { "type": { "returnType": "Series", "optional": false } },
+    "series": { "type": { "returnType": "Series<any>", "optional": false } },
     "itemId": { "type": { "returnType": "any", "optional": true } },
     "datum": { "type": { "returnType": "any", "optional": false } }
   },
@@ -3411,6 +3760,8 @@
     "xKey": { "type": { "returnType": "string", "optional": false } },
     "yKey": { "type": { "returnType": "string", "optional": false } }
   },
+  "LineTooltipRendererParams": {},
+  "LineContext": {},
   "ScatterNodeDatum": {
     "point": {
       "type": {
@@ -3420,7 +3771,7 @@
     },
     "size": { "type": { "returnType": "number", "optional": false } },
     "label": { "type": { "returnType": "MeasuredLabel", "optional": false } },
-    "series": { "type": { "returnType": "Series", "optional": false } },
+    "series": { "type": { "returnType": "Series<any>", "optional": false } },
     "itemId": { "type": { "returnType": "any", "optional": true } },
     "datum": { "type": { "returnType": "any", "optional": false } }
   },
@@ -3461,16 +3812,16 @@
     "y0": { "type": { "returnType": "number", "optional": false } },
     "y1": { "type": { "returnType": "number", "optional": false } },
     "depth": { "type": { "returnType": "number", "optional": false } },
-    "series": { "type": { "returnType": "TreemapSeries", "optional": false } },
     "fill": { "type": { "returnType": "string", "optional": false } },
     "label": { "type": { "returnType": "string", "optional": false } },
     "hasTitle": { "type": { "returnType": "boolean", "optional": false } },
     "colorValue": { "type": { "returnType": "number", "optional": false } },
+    "series": { "type": { "returnType": "Series<any>", "optional": false } },
     "itemId": { "type": { "returnType": "any", "optional": true } },
     "datum": { "type": { "returnType": "any", "optional": false } },
     "point": {
       "type": {
-        "returnType": "{ // in local (series) coordinates\n        readonly x: number;\n        readonly y: number;\n    }",
+        "returnType": "{\n        // in local (series) coordinates\n        readonly x: number;\n        readonly y: number;\n    }",
         "optional": true
       }
     }
@@ -3518,12 +3869,12 @@
         "optional": true
       }
     },
-    "series": { "type": { "returnType": "Series", "optional": false } },
+    "series": { "type": { "returnType": "Series<any>", "optional": false } },
     "itemId": { "type": { "returnType": "any", "optional": true } },
     "datum": { "type": { "returnType": "any", "optional": false } },
     "point": {
       "type": {
-        "returnType": "{ // in local (series) coordinates\n        readonly x: number;\n        readonly y: number;\n    }",
+        "returnType": "{\n        // in local (series) coordinates\n        readonly x: number;\n        readonly y: number;\n    }",
         "optional": true
       }
     }
@@ -3567,12 +3918,12 @@
     "highlighted": { "type": { "returnType": "boolean", "optional": false } }
   },
   "SeriesNodeDatum": {
-    "series": { "type": { "returnType": "Series", "optional": false } },
+    "series": { "type": { "returnType": "Series<any>", "optional": false } },
     "itemId": { "type": { "returnType": "any", "optional": true } },
     "datum": { "type": { "returnType": "any", "optional": false } },
     "point": {
       "type": {
-        "returnType": "{ // in local (series) coordinates\n        readonly x: number;\n        readonly y: number;\n    }",
+        "returnType": "{\n        // in local (series) coordinates\n        readonly x: number;\n        readonly y: number;\n    }",
         "optional": true
       }
     }
@@ -3604,6 +3955,9 @@
     "title": { "type": { "returnType": "string", "optional": true } },
     "color": { "type": { "returnType": "string", "optional": true } }
   },
+  "SeriesNodeDataContext": {
+    "meta": { "typeParams": ["S = SeriesNodeDatum", "L = S"] }
+  },
   "SeriesMarkerFormatterParams": {
     "datum": { "type": { "returnType": "any", "optional": false } },
     "fill": { "type": { "returnType": "string", "optional": true } },
@@ -3611,6 +3965,44 @@
     "strokeWidth": { "type": { "returnType": "number", "optional": false } },
     "size": { "type": { "returnType": "number", "optional": false } },
     "highlighted": { "type": { "returnType": "boolean", "optional": false } }
+  },
+  "TestCase": {
+    "options": {
+      "type": { "returnType": "AgChartOptions", "optional": false }
+    },
+    "assertions": {
+      "type": {
+        "arguments": { "chart": "Chart" },
+        "returnType": "Promise<void>",
+        "optional": false
+      }
+    },
+    "extraScreenshotActions": {
+      "type": {
+        "arguments": { "chart": "Chart" },
+        "returnType": "Promise<void>",
+        "optional": true
+      }
+    }
+  },
+  "CartesianTestCase": {
+    "options": {
+      "type": { "returnType": "AgCartesianChartOptions", "optional": false }
+    },
+    "assertions": {
+      "type": {
+        "arguments": { "chart": "Chart" },
+        "returnType": "Promise<void>",
+        "optional": false
+      }
+    },
+    "extraScreenshotActions": {
+      "type": {
+        "arguments": { "chart": "Chart" },
+        "returnType": "Promise<void>",
+        "optional": true
+      }
+    }
   },
   "ChartThemeDefaults": {},
   "Tick": {
@@ -3671,20 +4063,45 @@
   },
   "Reinterpolator": { "meta": { "typeParams": ["T"] } },
   "Deinterpolator": { "meta": { "typeParams": ["T"] } },
+  "RedrawType": {},
   "GradientColorStop": {
     "offset": { "type": { "returnType": "number", "optional": false } },
     "color": { "type": { "returnType": "string", "optional": false } }
   },
   "PointerEvents": {},
-  "RedrawType": {},
+  "RenderContext": {},
   "DebugOptions": {
-    "renderFrameIndex": {
-      "type": { "returnType": "boolean", "optional": false }
+    "stats": {
+      "type": {
+        "returnType": "false | 'basic' | 'detailed'",
+        "optional": false
+      }
     },
+    "dirtyTree": { "type": { "returnType": "boolean", "optional": false } },
     "renderBoundingBoxes": {
       "type": { "returnType": "boolean", "optional": false }
     },
     "consoleLog": { "type": { "returnType": "boolean", "optional": false } }
+  },
+  "SceneOptions": {
+    "document": { "type": { "returnType": "Document", "optional": false } },
+    "mode": {
+      "type": {
+        "returnType": "'simple' | 'composite' | 'dom-composite' | 'adv-composite'",
+        "optional": false
+      }
+    }
+  },
+  "SceneLayer": {
+    "id": { "type": { "returnType": "number", "optional": false } },
+    "name": { "type": { "returnType": "string", "optional": true } },
+    "zIndex": { "type": { "returnType": "number", "optional": false } },
+    "canvas": {
+      "type": {
+        "returnType": "HdpiOffscreenCanvas | HdpiCanvas",
+        "optional": false
+      }
+    }
   },
   "ValueFn": { "meta": { "typeParams": ["P", "GDatum", "PDatum"] } },
   "KeyFn": { "meta": { "typeParams": ["N", "G", "GDatum"] } },
@@ -3711,6 +4128,8 @@
     "index": { "type": { "returnType": "number", "optional": false } },
     "x": { "type": { "returnType": "number", "optional": false } },
     "y": { "type": { "returnType": "number", "optional": false } },
+    "datum": { "type": { "returnType": "PLD", "optional": false } },
+    "meta": { "typeParams": ["PLD = PointLabelDatum"] },
     "text": { "type": { "returnType": "string", "optional": false } },
     "width": { "type": { "returnType": "number", "optional": false } },
     "height": { "type": { "returnType": "number", "optional": false } }
@@ -3817,6 +4236,7 @@
   },
   "SourceEventListener": { "meta": { "typeParams": ["S"] } },
   "PropertyChangeEventListener": { "meta": { "typeParams": ["S", "V"] } },
+  "Callback": {},
   "OnSizeChange": {},
   "Entry": {},
   "NumberFormat": {},

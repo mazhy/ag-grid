@@ -1,6 +1,6 @@
 import { Grid, GridOptions, ColDef, ColGroupDef } from '@ag-grid-community/core'
 
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   columnDefs: [
     { field: 'country', rowGroup: true, enableRowGroup: true },
     {
@@ -30,14 +30,14 @@ const gridOptions: GridOptions = {
   suppressAggFuncInHeader: true,
 
   // this is a callback that gets called on each column definition
-  processSecondaryColDef: (colDef: ColDef) => {
+  processPivotResultColDef: (colDef: ColDef) => {
     if (colDef.pivotValueColumn?.getId() === 'gold') {
       colDef.headerName = colDef.headerName?.toUpperCase();
     }
   },
 
   // this is a callback that gets called on each group definition
-  processSecondaryColGroupDef: (colGroupDef: ColGroupDef) => {
+  processPivotResultColGroupDef: (colGroupDef: ColGroupDef) => {
     // for fun, add a css class for 2010
     if (colGroupDef.pivotKeys?.length && colGroupDef.pivotKeys[0] === '2010') {
       colGroupDef.headerClass = 'color-background'
@@ -59,5 +59,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
   fetch('https://www.ag-grid.com/example-assets/olympic-winners.json')
     .then(response => response.json())
-    .then(data => gridOptions.api!.setRowData(data))
+    .then((data: IOlympicData[]) => gridOptions.api!.setRowData(data))
 })

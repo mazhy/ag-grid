@@ -9,7 +9,7 @@ AG Grid comes in two forms: AG Grid Community (free for everyone, including prod
         The Enterprise version of AG Grid comes with more features and <a href="https://ag-grid.zendesk.com/" target="_blank">support via Zendesk</a>. The features that are only available in AG Grid Enterprise are marked with the Enterprise icon<enterprise-icon></enterprise-icon> as demonstrated in the image to the right and in the <a href="/licensing/#feature-comparison">feature comparison</a> below. 
         <br/>
         <br/>
-        See <a href="/license-pricing">Pricing</a> for details on purchasing an AG Grid Enterprise license.
+        See <a href="https://www.ag-grid.com/license-pricing">Pricing</a> for details on purchasing an AG Grid Enterprise license.
     </div>
     <image-caption src="licensing/resources/enterprise-features.png" alt="Enterprise Features" minwidth="15rem" width="15rem" maxwidth="15rem" height="10rem" constrained="true"></image-caption>
 </div>
@@ -195,8 +195,8 @@ If you mix the methods above (eg if you are using CommonJS in your application, 
 | import React from "react";
 | import {render} from "react-dom";
 |
-| import "@ag-grid-enterprise/core/dist/styles/ag-grid.css";
-| import "@ag-grid-enterprise/core/dist/styles/ag-theme-alpine.css";
+| import "@ag-grid-enterprise/core/styles/ag-grid.css";
+| import "@ag-grid-enterprise/core/styles/ag-theme-alpine.css";
 |
 | import {LicenseManager} from "@ag-grid-enterprise/core";
 | LicenseManager.setLicenseKey("your license key");
@@ -219,8 +219,8 @@ If you mix the methods above (eg if you are using CommonJS in your application, 
 | ```jsx
 | import Vue from "vue";
 |
-| import "@ag-grid-enterprise/core/dist/styles/ag-grid.css";
-| import "@ag-grid-enterprise/core/dist/styles/ag-theme-alpine.css";
+| import "@ag-grid-enterprise/styles/ag-grid.css";
+| import "@ag-grid-enterprise/styles/ag-theme-alpine.css";
 |
 | import { LicenseManager } from "@ag-grid-enterprise/core";
 |

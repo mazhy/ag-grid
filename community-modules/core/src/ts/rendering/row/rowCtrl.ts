@@ -107,16 +107,6 @@ export class RowCtrl extends BeanStub {
 
     private updateColumnListsPending = false;
 
-    // the top needs to be set into the DOM element when the element is created, not updated afterwards.
-    // otherwise the transition would not work, as it would be transitioning from zero (the unset value).
-    // for example, suppose a row that is outside the viewport, then user does a filter to remove other rows
-    // and this row now appears in the viewport, and the row moves up (ie it was under the viewport and not rendered,
-    // but now is in the viewport) then a new RowComp is created, however it should have it's position initialised
-    // to below the viewport, so the row will appear to animate up. if we didn't set the initial position at creation
-    // time, the row would animate down (ie from position zero).
-    private initialTop: string;
-    private initialTransform: string;
-
     constructor(
         rowNode: RowNode,
         beans: Beans,
@@ -141,8 +131,10 @@ export class RowCtrl extends BeanStub {
         this.setRowType();
 
         this.addListeners();
+    }
 
-        this.setInitialRowTop();
+    public isSticky(): boolean {
+        return this.rowNode.sticky;
     }
 
     public getBeans(): Beans {
@@ -489,7 +481,7 @@ export class RowCtrl extends BeanStub {
     }
 
     private setAnimateFlags(animateIn: boolean): void {
-        if (animateIn) {
+        if (!this.isSticky() && animateIn) {
             const oldRowTopExists = exists(this.rowNode.oldRowTop);
             // if the row had a previous position, we slide it in (animate row top)
             this.slideRowIn = oldRowTopExists;
@@ -519,7 +511,7 @@ export class RowCtrl extends BeanStub {
 
     public refreshFullWidth(): boolean {
         // returns 'true' if refresh succeeded
-        const tryRefresh = (gui: RowGui, pinned: string | null): boolean => {
+        const tryRefresh = (gui: RowGui, pinned: 'left' | 'right' | null): boolean => {
             if (!gui) { return true; } // no refresh needed
 
             const cellRenderer = gui.rowComp.getFullWidthCellRenderer();
@@ -802,11 +794,16 @@ export class RowCtrl extends BeanStub {
         const node = this.rowNode;
         const columnModel = this.beans.columnModel;
 
-        this.beans.focusService.setFocusedCell(
-            node.rowIndex!,
-            columnModel.getAllDisplayedColumns()[0],
-            node.rowPinned, true
-        );
+        if (this.beans.rangeService) {
+            this.beans.rangeService.removeAllCellRanges();
+        }
+
+        this.beans.focusService.setFocusedCell({
+            rowIndex: node.rowIndex!,
+            column: columnModel.getAllDisplayedColumns()[0],
+            rowPinned: node.rowPinned,
+            forceBrowserFocus: true
+        });
 
     }
 
@@ -853,18 +850,18 @@ export class RowCtrl extends BeanStub {
 
         if (this.rowNode.isSelected()) {
             if (multiSelectOnClick) {
-                this.rowNode.setSelectedParams({ newValue: false });
+                this.rowNode.setSelectedParams({ newValue: false, event: mouseEvent });
             } else if (multiSelectKeyPressed) {
                 if (rowDeselectionWithCtrl) {
-                    this.rowNode.setSelectedParams({ newValue: false });
+                    this.rowNode.setSelectedParams({ newValue: false, event: mouseEvent });
                 }
             } else {
                 // selected with no multi key, must make sure anything else is unselected
-                this.rowNode.setSelectedParams({ newValue: true, clearSelection: !shiftKeyPressed, rangeSelect: shiftKeyPressed });
+                this.rowNode.setSelectedParams({ newValue: true, clearSelection: !shiftKeyPressed, rangeSelect: shiftKeyPressed, event: mouseEvent });
             }
         } else {
             const clearSelection = multiSelectOnClick ? false : !multiSelectKeyPressed;
-            this.rowNode.setSelectedParams({ newValue: true, clearSelection: clearSelection, rangeSelect: shiftKeyPressed });
+            this.rowNode.setSelectedParams({ newValue: true, clearSelection: clearSelection, rangeSelect: shiftKeyPressed, event: mouseEvent });
         }
     }
 
@@ -903,7 +900,7 @@ export class RowCtrl extends BeanStub {
         checkRowSizeFunc();
     }
 
-    public createFullWidthParams(eRow: HTMLElement, pinned: string | null): ICellRendererParams {
+    public createFullWidthParams(eRow: HTMLElement, pinned: 'left' | 'right' | null): ICellRendererParams {
         const params = {
             fullWidth: true,
             data: this.rowNode.data,
@@ -977,11 +974,18 @@ export class RowCtrl extends BeanStub {
     }
 
     public stopEditing(cancel = false): void {
-        const cellEdits = this.getAllCellCtrls().map(cellCtrl => cellCtrl.stopEditing(cancel));
+        const cellControls = this.getAllCellCtrls();
+        const isRowEdit = this.editingRow;
 
-        if (!this.editingRow) { return; }
+        let fireRowEditEvent = false;
+        for (const ctrl of cellControls) {
+            const valueChanged = ctrl.stopEditing(cancel);
+            if (isRowEdit && !cancel && !fireRowEditEvent && valueChanged) {
+                fireRowEditEvent = true;
+            }
+        }
 
-        if (!cancel && cellEdits.some(edit => edit)) {
+        if (fireRowEditEvent) {
             const event: RowValueChangedEvent = this.createRowEvent(Events.EVENT_ROW_VALUE_CHANGED);
             this.beans.eventService.dispatchEvent(event);
         }
@@ -1058,7 +1062,7 @@ export class RowCtrl extends BeanStub {
         return businessKeyForNodeFunc(this.rowNode);
     }
 
-    private getPinnedForContainer(rowContainerType: RowContainerType): string | null {
+    private getPinnedForContainer(rowContainerType: RowContainerType): 'left' | 'right' | null {
         const pinned = rowContainerType === RowContainerType.LEFT ? Constants.PINNED_LEFT :
             rowContainerType === RowContainerType.RIGHT ? Constants.PINNED_RIGHT : null;
         return pinned;
@@ -1213,7 +1217,7 @@ export class RowCtrl extends BeanStub {
             // We do not use rowNode.rowHeight here, as this could be the result of autoHeight,
             // and we found using the autoHeight result causes a loop, where changing the
             // line-height them impacts the cell height, resulting in a new autoHeight,
-            // resulting in a new line-height and so on loop. 
+            // resulting in a new line-height and so on loop.
             // const heightFromFunc = this.beans.gridOptionsWrapper.getRowHeightForNode(this.rowNode).height;
             if (lineHeight) {
                 gui.element.style.setProperty('--ag-line-height', lineHeight);
@@ -1254,6 +1258,9 @@ export class RowCtrl extends BeanStub {
     }
 
     private setupRemoveAnimation(): void {
+        // we don't animate sticky rows
+        if (this.isSticky()) { return; }
+
         const rowStillVisibleJustNotInViewport = this.rowNode.rowTop != null;
         if (rowStillVisibleJustNotInViewport) {
             // if the row is not rendered, but in viewport, it means it has moved,
@@ -1350,32 +1357,37 @@ export class RowCtrl extends BeanStub {
         }
     }
 
+    // the top needs to be set into the DOM element when the element is created, not updated afterwards.
+    // otherwise the transition would not work, as it would be transitioning from zero (the unset value).
+    // for example, suppose a row that is outside the viewport, then user does a filter to remove other rows
+    // and this row now appears in the viewport, and the row moves up (ie it was under the viewport and not rendered,
+    // but now is in the viewport) then a new RowComp is created, however it should have it's position initialised
+    // to below the viewport, so the row will appear to animate up. if we didn't set the initial position at creation
+    // time, the row would animate down (ie from position zero).
     public getInitialRowTop(): string | undefined {
-        return this.initialTop;
+        const suppressRowTransform = this.beans.gridOptionsWrapper.isSuppressRowTransform();
+        return suppressRowTransform ? this.getInitialRowTopShared() : undefined;
     }
-
     public getInitialTransform(): string | undefined {
-        return this.initialTransform;
+        const suppressRowTransform = this.beans.gridOptionsWrapper.isSuppressRowTransform();
+        return suppressRowTransform ? undefined : `translateY(${this.getInitialRowTopShared()})`;
     }
-
-    private setInitialRowTop() {
+    private getInitialRowTopShared(): string {
         // print layout uses normal flow layout for row positioning
         if (this.printLayout) { return ''; }
 
-        // if sliding in, we take the old row top. otherwise we just set the current row top.
-        const pixels = this.slideRowIn ? this.roundRowTopToBounds(this.rowNode.oldRowTop!) : this.rowNode.rowTop;
-        const afterPaginationPixels = this.applyPaginationOffset(pixels!);
-        // we don't apply scaling if row is pinned
-        const afterScalingPixels = this.rowNode.isRowPinned() ? afterPaginationPixels : this.beans.rowContainerHeightService.getRealPixelPosition(afterPaginationPixels);
-
-        const res = afterScalingPixels + 'px';
-
-        const suppressRowTransform = this.beans.gridOptionsWrapper.isSuppressRowTransform();
-        if (suppressRowTransform) {
-            this.initialTop = res;
+        let rowTop: number;
+        if (this.isSticky()) {
+            rowTop = this.rowNode.stickyRowTop;
         } else {
-            this.initialTransform = `translateY(${res})`;
+            // if sliding in, we take the old row top. otherwise we just set the current row top.
+            const pixels = this.slideRowIn ? this.roundRowTopToBounds(this.rowNode.oldRowTop!) : this.rowNode.rowTop;
+            const afterPaginationPixels = this.applyPaginationOffset(pixels!);
+            // we don't apply scaling if row is pinned
+            rowTop = this.rowNode.isRowPinned() ? afterPaginationPixels : this.beans.rowContainerHeightService.getRealPixelPosition(afterPaginationPixels);
         }
+
+        return rowTop + 'px';
     }
 
     private setRowTopStyle(topPx: string): void {

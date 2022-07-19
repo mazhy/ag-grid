@@ -34,6 +34,24 @@ const all_products = [
 
 const columnDefs: ColDef[] = [{ field: 'product' }, { field: 'value' }]
 
+const dataSource: IServerSideDatasource = {
+    getRows: (params: IServerSideGetRowsParams) => {
+        // To make the demo look real, wait for 500ms before returning
+        setTimeout(function () {
+            const rows: any[] = [];
+            products.forEach(function (product, index) {
+                rows.push({
+                    product: product,
+                    value: getNextValue(),
+                })
+            })
+
+            // call the success callback
+            params.success({ rowData: rows, rowCount: rows.length })
+        }, 500)
+    },
+};
+
 const gridOptions: GridOptions = {
     defaultColDef: {
         width: 250,
@@ -43,13 +61,13 @@ const gridOptions: GridOptions = {
         return params.data.product
     },
     rowSelection: 'multiple',
-    serverSideStoreType: 'full',
     enableCellChangeFlash: true,
     columnDefs: columnDefs,
     // use the enterprise row model
     rowModelType: 'serverSide',
     // cacheBlockSize: 100,
     animateRows: true,
+    serverSideDatasource: dataSource,
 }
 
 let newProductSequence = 0;
@@ -149,30 +167,6 @@ function getNextValue() {
 // setup the grid after the page has finished loading
 document.addEventListener('DOMContentLoaded', function () {
     const gridDiv = document.querySelector<HTMLElement>('#myGrid')!;
-    new Grid(gridDiv, gridOptions)
-
-    fetch('https://www.ag-grid.com/example-assets/olympic-winners.json')
-        .then(response => response.json())
-        .then(function (data) {
-            const dataSource: IServerSideDatasource = {
-                getRows: (params: IServerSideGetRowsParams) => {
-                    // To make the demo look real, wait for 500ms before returning
-                    setTimeout(function () {
-                        const rows: any[] = [];
-                        products.forEach(function (product, index) {
-                            rows.push({
-                                product: product,
-                                value: getNextValue(),
-                            })
-                        })
-
-                        // call the success callback
-                        params.success({ rowData: rows, rowCount: rows.length })
-                    }, 500)
-                },
-            };
-
-            gridOptions.api!.setServerSideDatasource(dataSource)
-        })
-})
+    new Grid(gridDiv, gridOptions);
+});
 

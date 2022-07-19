@@ -8,7 +8,7 @@ const columnDefs: ColDef[] = [
   { field: 'bronze', aggFunc: 'sum' },
 ]
 
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   columnDefs: columnDefs,
   defaultColDef: {
     flex: 1,
@@ -22,7 +22,7 @@ const gridOptions: GridOptions = {
   },
   // use the server-side row model
   rowModelType: 'serverSide',
-  serverSideStoreType: 'partial',
+  serverSideInfiniteScroll: true,
 
   // fetch 10 rows per at a time (default is 100)
   cacheBlockSize: 100,

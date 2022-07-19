@@ -1,7 +1,6 @@
 import { BeanStub } from "../context/beanStub";
 import { Autowired, Optional } from "../context/context";
 import { LayoutFeature, LayoutView } from "../styling/layoutFeature";
-import { Constants } from "../constants/constants";
 import { Events } from "../eventKeys";
 import { RowContainerHeightService } from "../rendering/rowContainerHeightService";
 import { CtrlsService } from "../ctrlsService";
@@ -9,9 +8,8 @@ import { ColumnModel } from "../columns/columnModel";
 import { ScrollVisibleService } from "./scrollVisibleService";
 import { IContextMenuFactory } from "../interfaces/iContextMenuFactory";
 import { GridBodyScrollFeature } from "./gridBodyScrollFeature";
-import { getInnerWidth, isVerticalScrollShowing } from "../utils/dom";
+import { getInnerWidth, isElementChildOfClass, isVerticalScrollShowing } from "../utils/dom";
 import { HeaderNavigationService } from "../headerRendering/common/headerNavigationService";
-import { PaginationProxy } from "../pagination/paginationProxy";
 import { RowDragFeature } from "./rowDragFeature";
 import { DragAndDropService } from "../dragAndDrop/dragAndDropService";
 import { PinnedRowModel } from "../pinnedRowModel/pinnedRowModel";
@@ -19,6 +17,7 @@ import { getTabIndex } from "../utils/browser";
 import { RowRenderer } from "../rendering/rowRenderer";
 import { PopupService } from "../widgets/popupService";
 import { MouseEventService } from "./mouseEventService";
+import { IRowModel } from "../interfaces/iRowModel";
 
 export enum RowAnimationCssClasses {
     ANIMATION_ON = 'ag-row-animation',
@@ -36,6 +35,9 @@ export interface IGridBodyComp extends LayoutView {
     setTopDisplay(display: string): void;
     setBottomHeight(height: number): void;
     setBottomDisplay(display: string): void;
+    setStickyTopHeight(height: string): void;
+    setStickyTopTop(offsetTop: string): void;
+    setStickyTopWidth(width: string): void;
     setColumnCount(count: number): void;
     setRowCount(count: number): void;
     setRowAnimationCssOnBodyViewport(cssClass: string, animate: boolean): void;
@@ -52,18 +54,20 @@ export class GridBodyCtrl extends BeanStub {
     @Autowired('scrollVisibleService') private scrollVisibleService: ScrollVisibleService;
     @Optional('contextMenuFactory') private contextMenuFactory: IContextMenuFactory;
     @Autowired('headerNavigationService') private headerNavigationService: HeaderNavigationService;
-    @Autowired('paginationProxy') private paginationProxy: PaginationProxy;
     @Autowired('dragAndDropService') private dragAndDropService: DragAndDropService;
     @Autowired('pinnedRowModel') private pinnedRowModel: PinnedRowModel;
     @Autowired('rowRenderer') private rowRenderer: RowRenderer;
     @Autowired('popupService') public popupService: PopupService;
     @Autowired('mouseEventService') public mouseEventService: MouseEventService;
+    @Autowired('rowModel') public rowModel: IRowModel;
 
     private comp: IGridBodyComp;
     private eGridBody: HTMLElement;
     private eBodyViewport: HTMLElement;
     private eTop: HTMLElement;
     private eBottom: HTMLElement;
+    private eStickyTop: HTMLElement;
+    private stickyTopHeight: number = 0;
 
     private bodyScrollFeature: GridBodyScrollFeature;
     private rowDragFeature: RowDragFeature;
@@ -76,13 +80,20 @@ export class GridBodyCtrl extends BeanStub {
         return this.eBodyViewport;
     }
 
-    public setComp(comp: IGridBodyComp, eGridBody: HTMLElement, eBodyViewport: HTMLElement,
-                   eTop: HTMLElement, eBottom: HTMLElement): void {
+    public setComp(
+        comp: IGridBodyComp,
+        eGridBody: HTMLElement,
+        eBodyViewport: HTMLElement,
+        eTop: HTMLElement,
+        eBottom: HTMLElement,
+        eStickyTop: HTMLElement
+    ): void {
         this.comp = comp;
         this.eGridBody = eGridBody;
         this.eBodyViewport = eBodyViewport;
         this.eTop = eTop;
         this.eBottom = eBottom;
+        this.eStickyTop = eStickyTop;
 
         this.setCellTextSelection(this.gridOptionsWrapper.isEnableCellTextSelect());
 
@@ -93,7 +104,7 @@ export class GridBodyCtrl extends BeanStub {
         this.setupRowAnimationCssClass();
 
         this.addEventListeners();
-        this.addFocusListeners([eTop, eBodyViewport, eBottom]);
+        this.addFocusListeners([eTop, eBodyViewport, eBottom, eStickyTop]);
         this.onGridColumnsChanged();
         this.addBodyViewportListener();
         this.setFloatingHeights();
@@ -110,17 +121,33 @@ export class GridBodyCtrl extends BeanStub {
     private addEventListeners(): void {
         this.addManagedListener(this.eventService, Events.EVENT_GRID_COLUMNS_CHANGED, this.onGridColumnsChanged.bind(this));
         this.addManagedListener(this.eventService, Events.EVENT_SCROLL_VISIBILITY_CHANGED, this.onScrollVisibilityChanged.bind(this));
-        this.addManagedListener(this.eventService, Events.EVENT_PINNED_ROW_DATA_CHANGED, this.setFloatingHeights.bind(this));
+        this.addManagedListener(this.eventService, Events.EVENT_PINNED_ROW_DATA_CHANGED, this.onPinnedRowDataChanged.bind(this));
+        this.addManagedListener(this.eventService, Events.EVENT_HEADER_HEIGHT_CHANGED, this.onHeaderHeightChanged.bind(this));
     }
 
     private addFocusListeners(elements: HTMLElement[]): void {
         elements.forEach(element => {
-            this.addManagedListener(element, 'focusin', () => {
-                element.classList.add('ag-has-focus');
+            this.addManagedListener(element, 'focusin', (e: FocusEvent) => {
+                const { target } = e;
+                // element being focused is nested?
+                const isFocusedElementNested = isElementChildOfClass(target as HTMLElement, 'ag-root', element);
+
+                element.classList.toggle('ag-has-focus', !isFocusedElementNested);
             });
 
             this.addManagedListener(element, 'focusout', (e: FocusEvent) => {
-                if (!element.contains(e.relatedTarget as HTMLElement)) {
+                const { target, relatedTarget } = e;
+                const gridContainRelatedTarget = element.contains(relatedTarget as HTMLElement);
+                const isNestedRelatedTarget = isElementChildOfClass(relatedTarget as HTMLElement, 'ag-root', element);
+                const isNestedTarget = isElementChildOfClass(target as HTMLElement, 'ag-root', element);
+
+                // element losing focus belongs to a nested grid,
+                // it should not be handled here.
+                if (isNestedTarget) { return; }
+
+                // the grid does not contain, or the focus element is within
+                // a nested grid
+                if (!gridContainRelatedTarget || isNestedRelatedTarget) {
                     element.classList.remove('ag-has-focus');
                 }
             });
@@ -140,6 +167,7 @@ export class GridBodyCtrl extends BeanStub {
     private onScrollVisibilityChanged(): void {
         const visible = this.scrollVisibleService.isVerticalScrollShowing();
         this.setVerticalScrollPaddingVisible(visible);
+        this.setStickyTopWidth(visible);
     }
 
     private onGridColumnsChanged(): void {
@@ -189,23 +217,15 @@ export class GridBodyCtrl extends BeanStub {
             }
         };
 
-        const viewports = [this.eBodyViewport, this.eBottom, this.eTop];
+        const viewports = [this.eBodyViewport, this.eBottom, this.eTop, this.eStickyTop];
 
         viewports.forEach(viewport => this.addManagedListener(viewport, 'focusout', focusOutListener));
     }
 
     public updateRowCount(): void {
         const headerCount = this.headerNavigationService.getHeaderRowCount();
-        const modelType = this.paginationProxy.getType();
-        let rowCount = -1;
 
-        if (modelType === Constants.ROW_MODEL_TYPE_CLIENT_SIDE) {
-            rowCount = 0;
-            this.paginationProxy.forEachNode(node => {
-                if (!node.group) { rowCount++; }
-            });
-        }
-
+        const rowCount = this.rowModel.isLastRowIndexKnown() ? this.rowModel.getRowCount() : -1;
         const total = rowCount === -1 ? -1 : (headerCount + rowCount);
 
         this.comp.setRowCount(total);
@@ -262,14 +282,23 @@ export class GridBodyCtrl extends BeanStub {
         };
 
         this.addManagedListener(this.eBodyViewport, 'contextmenu', listener);
-        this.addManagedListener(this.eBodyViewport, 'wheel', this.onWheel.bind(this));
+        this.addManagedListener(this.eBodyViewport, 'wheel', this.onBodyViewportWheel.bind(this));
+        this.addManagedListener(this.eStickyTop, 'wheel', this.onStickyTopWheel.bind(this));
     }
 
-    private onWheel(e: MouseEvent): void {
+    private onBodyViewportWheel(e: WheelEvent): void {
         if (!this.gridOptionsWrapper.isSuppressScrollWhenPopupsAreOpen()) { return; }
 
         if (this.popupService.hasAnchoredPopup()) {
             e.preventDefault();
+        }
+    }
+
+    private onStickyTopWheel(e: WheelEvent): void {
+        e.preventDefault();
+
+        if (e.offsetY) {
+            this.scrollVertically(e.deltaY);
         }
     }
 
@@ -294,6 +323,10 @@ export class GridBodyCtrl extends BeanStub {
         return this.rowDragFeature;
     }
 
+    private onPinnedRowDataChanged(): void {
+        this.setFloatingHeights();
+    }
+
     private setFloatingHeights(): void {
         const { pinnedRowModel } = this;
 
@@ -316,6 +349,43 @@ export class GridBodyCtrl extends BeanStub {
 
         this.comp.setTopDisplay(floatingTopHeight ? 'inherit' : 'none');
         this.comp.setBottomDisplay(floatingBottomHeight ? 'inherit' : 'none');
+        this.setStickyTopOffsetTop();
+    }
+
+    public setStickyTopHeight(height: number = 0): void {
+        // console.log('setting sticky top height ' + height);
+        this.comp.setStickyTopHeight(`${height}px`);
+        this.stickyTopHeight = height;
+    }
+
+    public getStickyTopHeight(): number {
+        return this.stickyTopHeight;
+    }
+
+    private setStickyTopWidth(vScrollVisible: boolean) {
+        if (!vScrollVisible) {
+            this.comp.setStickyTopWidth('100%');
+        } else {
+            const scrollbarWidth = this.gridOptionsWrapper.getScrollbarWidth();
+            this.comp.setStickyTopWidth(`calc(100% - ${scrollbarWidth}px)`);
+        }
+    }
+
+    private onHeaderHeightChanged(): void {
+        this.setStickyTopOffsetTop();
+    }
+
+    private setStickyTopOffsetTop(): void {
+        const headerCtrl = this.ctrlsService.getGridHeaderCtrl();
+        const headerHeight = headerCtrl.getHeaderHeight();
+        const pinnedTopHeight = this.pinnedRowModel.getPinnedTopTotalHeight();
+
+        let height = 0;
+
+        if (headerHeight > 0) { height += headerHeight + 1; }
+        if (pinnedTopHeight > 0) { height += pinnedTopHeight + 1; }
+
+        this.comp.setStickyTopTop(`${height}px`);
     }
 
     // method will call itself if no available width. this covers if the grid

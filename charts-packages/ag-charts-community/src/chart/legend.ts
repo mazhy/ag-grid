@@ -2,11 +2,13 @@ import { Group } from "../scene/group";
 import { Selection } from "../scene/selection";
 import { MarkerLabel } from "./markerLabel";
 import { BBox } from "../scene/bbox";
-import { FontStyle, FontWeight } from "../scene/shape/text";
+import { FontStyle, FontWeight, getFont } from "../scene/shape/text";
 import { Marker } from "./marker/marker";
-import { SourceEvent } from "../util/observable";
+import { AgChartLegendClickEvent, AgChartLegendListeners } from "./agChartOptions";
 import { getMarker } from "./marker/util";
 import { createId } from "../util/id";
+import { RedrawType } from "../scene/node";
+import { HdpiCanvas } from "../canvas/hdpiCanvas";
 
 export interface LegendDatum {
     id: string;       // component ID
@@ -22,12 +24,6 @@ export interface LegendDatum {
     label: {
         text: string;  // display name for the sub-component
     };
-}
-
-export interface LegendClickEvent extends SourceEvent<Legend> {
-    event: MouseEvent;
-    itemId: string;
-    enabled: boolean;
 }
 
 export enum LegendOrientation {
@@ -49,12 +45,16 @@ interface LegendLabelFormatterParams {
 }
 
 export class LegendLabel {
+    maxLength = undefined;
     color = 'black';
     fontStyle?: FontStyle = undefined;
     fontWeight?: FontWeight = undefined;
     fontSize = 12;
     fontFamily = 'Verdana, sans-serif';
     formatter?: (params: LegendLabelFormatterParams) => string = undefined;
+    getFont(): string {
+        return getFont(this.fontSize, this.fontFamily, this.fontStyle, this.fontWeight);
+    }
 }
 
 export class LegendMarker {
@@ -84,6 +84,8 @@ export class LegendMarker {
 export class LegendItem {
     readonly marker = new LegendMarker();
     readonly label = new LegendLabel();
+    /** Used to constrain the width of legend items. */
+    maxWidth?: number = undefined;
     /**
      * The legend uses grid layout for its items, occupying as few columns as possible when positioned to left or right,
      * and as few rows as possible when positioned to top or bottom. This config specifies the amount of horizontal
@@ -98,6 +100,14 @@ export class LegendItem {
     paddingY = 8;
 }
 
+const NO_OP_LISTENER = () => {
+    // Default listener that does nothing.
+};
+
+export class LegendListeners implements Required<AgChartLegendListeners> {
+    legendItemClick: (event: AgChartLegendClickEvent) => void = NO_OP_LISTENER;
+}
+
 export class Legend {
 
     static className = 'Legend';
@@ -106,13 +116,16 @@ export class Legend {
 
     onLayoutChange?: () => void;
 
-    readonly group: Group = new Group();
+    readonly group: Group = new Group({ name: 'legend', layer: true, zIndex: 300 });
 
     private itemSelection: Selection<MarkerLabel, Group, any, any> = Selection.select(this.group).selectAll<MarkerLabel>();
 
     private oldSize: [number, number] = [0, 0];
 
     readonly item = new LegendItem();
+    readonly listeners = new LegendListeners();
+
+    truncatedItems: Set<string> = new Set();
 
     private _data: LegendDatum[] = [];
     set data(value: LegendDatum[]) {
@@ -161,13 +174,29 @@ export class Legend {
     public onMarkerShapeChange() {
         this.itemSelection = this.itemSelection.setData([]);
         this.itemSelection.exit.remove();
-        this.group.markDirty();
+        this.group.markDirty(this.group, RedrawType.MINOR);
     }
 
     /**
      * Spacing between the legend and the edge of the chart's element.
      */
     spacing = 20;
+
+    private characterWidths = new Map();
+
+    private getCharacterWidths(font: string) {
+        const { characterWidths } = this;
+
+        if (characterWidths.has(font)) {
+            return characterWidths.get(font);
+        }
+
+        const cw: { [key: string]: number } = {
+            '...': HdpiCanvas.getTextSize('...', font).width,
+        };
+        characterWidths.set(font, cw);
+        return cw;
+    }
 
     readonly size: [number, number] = [0, 0];
 
@@ -184,42 +213,94 @@ export class Legend {
      * @param height
      */
     performLayout(width: number, height: number) {
-        const { item } = this;
-        const { marker, paddingX, paddingY } = item;
+        const {
+            paddingX, paddingY, label, maxWidth,
+            marker: {
+                size: markerSize,
+                padding: markerPadding,
+                shape: markerShape
+            },
+            label: {
+                maxLength = Infinity,
+                fontStyle,
+                fontWeight,
+                fontSize,
+                fontFamily
+            },
+        } = this.item;
         const updateSelection = this.itemSelection.setData(this.data, (_, datum) => {
-            const MarkerShape = getMarker(marker.shape || datum.marker.shape);
-            return datum.id + '-' + datum.itemId + '-' + MarkerShape.name;
+            const Marker = getMarker(markerShape || datum.marker.shape);
+            return datum.id + '-' + datum.itemId + '-' + Marker.name;
         });
         updateSelection.exit.remove();
 
         const enterSelection = updateSelection.enter.append(MarkerLabel).each((node, datum) => {
-            const MarkerShape = getMarker(marker.shape || datum.marker.shape);
-            node.marker = new MarkerShape();
+            const Marker = getMarker(markerShape || datum.marker.shape);
+            node.marker = new Marker();
         });
         const itemSelection = this.itemSelection = updateSelection.merge(enterSelection);
         const itemCount = itemSelection.size;
 
         // Update properties that affect the size of the legend items and measure them.
         const bboxes: BBox[] = [];
-        const itemMarker = this.item.marker;
-        const itemLabel = this.item.label;
-        const maxCharCount = 25;
+
+        const font = label.getFont();
         const ellipsis = `...`;
+
+        const itemMaxWidthPercentage = 0.8;
+        const maxItemWidth = maxWidth ?? (width * itemMaxWidthPercentage);
+
         itemSelection.each((markerLabel, datum) => {
             // TODO: measure only when one of these properties or data change (in a separate routine)
-            markerLabel.markerSize = itemMarker.size;
-            markerLabel.spacing = itemMarker.padding;
-            markerLabel.fontStyle = itemLabel.fontStyle;
-            markerLabel.fontWeight = itemLabel.fontWeight;
-            markerLabel.fontSize = itemLabel.fontSize;
-            markerLabel.fontFamily = itemLabel.fontFamily;
-
             let text = datum.label.text;
-            if (text.length > maxCharCount) {
-                text = `${text.substring(0, maxCharCount - ellipsis.length)}${ellipsis}`;
-            }
-            markerLabel.text = text;
+            markerLabel.markerSize = markerSize;
+            markerLabel.spacing = markerPadding;
+            markerLabel.fontStyle = fontStyle;
+            markerLabel.fontWeight = fontWeight;
+            markerLabel.fontSize = fontSize;
+            markerLabel.fontFamily = fontFamily;
 
+            const textChars = text.split('');
+            let addEllipsis = false;
+
+            if (text.length > maxLength) {
+                text = `${text.substring(0, maxLength)}`;
+                addEllipsis = true;
+            }
+
+            const labelWidth = markerSize + markerPadding + HdpiCanvas.getTextSize(text, font).width;
+            if (labelWidth > maxItemWidth) {
+                let truncatedText = '';
+                const characterWidths = this.getCharacterWidths(font);
+                let cumCharSize = characterWidths[ellipsis];
+
+                for (const char of textChars) {
+                    if (!characterWidths[char]) {
+                        characterWidths[char] = HdpiCanvas.getTextSize(char, font).width;
+                    };
+
+                    cumCharSize += characterWidths[char];
+
+                    if (cumCharSize > maxItemWidth) {
+                        break;
+                    }
+
+                    truncatedText += char;
+                }
+
+                text = truncatedText;
+                addEllipsis = true;
+            }
+
+            const id = datum.itemId || datum.id;
+            if (addEllipsis) {
+                text += ellipsis;
+                this.truncatedItems.add(id);
+            } else {
+                this.truncatedItems.delete(id);
+            }
+
+            markerLabel.text = text;
             bboxes.push(markerLabel.computeBBox());
         });
 
@@ -330,7 +411,7 @@ export class Legend {
         columnWidth = 0;
 
         // Position legend items using the layout computed above.
-        itemSelection.each((markerLabel, datum, i) => {
+        itemSelection.each((markerLabel, _, i) => {
             // Round off for pixel grid alignment to work properly.
             markerLabel.translationX = Math.floor(startX + x);
             markerLabel.translationY = Math.floor(startY + y);
@@ -363,15 +444,16 @@ export class Legend {
     }
 
     update() {
+        const { marker: { strokeWidth }, label: { color } } = this.item;
         this.itemSelection.each((markerLabel, datum) => {
             const marker = datum.marker;
             markerLabel.markerFill = marker.fill;
             markerLabel.markerStroke = marker.stroke;
-            markerLabel.markerStrokeWidth = this.item.marker.strokeWidth;
+            markerLabel.markerStrokeWidth = strokeWidth;
             markerLabel.markerFillOpacity = marker.fillOpacity;
             markerLabel.markerStrokeOpacity = marker.strokeOpacity;
             markerLabel.opacity = datum.enabled ? 1 : 0.5;
-            markerLabel.color = this.item.label.color;
+            markerLabel.color = color;
         });
     }
 

@@ -8,9 +8,58 @@ let isIE: boolean;
 let isEdge: boolean;
 let isChrome: boolean;
 let isFirefox: boolean;
+let isMacOs: boolean;
 let isIOS: boolean;
 let invisibleScrollbar: boolean;
 let browserScrollbarWidth: number;
+let browserInfo: { name: string, version: number };
+
+/**
+ * from https://stackoverflow.com/a/16938481/1388233
+ */
+export function getBrowserInfo(): { name: string, version: number } {
+    if (browserInfo) {
+        return browserInfo;
+    }
+    const userAgent = navigator.userAgent;
+    let match = userAgent.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
+    let tem;
+    let version: number;
+
+    if (/trident/i.test(match[1])) {
+        tem = /\brv[ :]+(\d+)/g.exec(userAgent) || [];
+        version = tem[1] != null ? parseFloat(tem[1]) : 0;
+        return {
+            name:'IE',
+            version
+        };
+    }
+
+    if (match[1] === 'Chrome') {
+        tem = userAgent.match(/\bOPR|Edge\/(\d+)/);
+        if (tem != null) {
+            version = tem[1] != null ? parseFloat(tem[1]) : 0;
+            return {
+                name:'Opera',
+                version
+            };
+        }
+    }
+
+    match = match[2] ? [match[1], match[2]] : [navigator.appName, navigator.appVersion, '-?'];
+    tem = userAgent.match(/version\/(\d+)/i);
+
+    if (tem != null) {
+        match.splice(1, 1, tem[1]);
+    }
+
+    const name = match[0];
+    version = match[1] != null ? parseFloat(match[1]) : 0;
+
+    browserInfo = { name, version };
+
+    return browserInfo;
+ }
 
 function isBrowserIE(): boolean {
     if (isIE === undefined) {
@@ -57,6 +106,14 @@ export function isBrowserFirefox(): boolean {
     return isFirefox;
 }
 
+export function isMacOsUserAgent(): boolean {
+    if (isMacOs === undefined) {
+        isMacOs = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform);
+    }
+
+    return isMacOs;
+}
+
 export function isIOSUserAgent(): boolean {
     if (isIOS === undefined) {
         // taken from https://stackoverflow.com/a/58064481/1388233
@@ -68,6 +125,12 @@ export function isIOSUserAgent(): boolean {
     }
 
     return isIOS;
+}
+
+export function browserSupportsPreventScroll(): boolean {
+    // all browsers except safari support focus({ preventScroll: true }).
+    // this feature was added on Safari 15+
+    return !isBrowserSafari() || getBrowserInfo().version >= 15;
 }
 
 export function getTabIndex(el: HTMLElement | null): string | null {

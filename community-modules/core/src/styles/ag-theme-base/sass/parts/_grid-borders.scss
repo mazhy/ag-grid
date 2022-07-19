@@ -14,10 +14,6 @@
         @include ag-border(critical, right);
     }
 
-    .ag-row-selected {
-        @include ag-color-property(background-color, selected-row-background-color);
-    }
-
     // we do not want to color the range color when the cell is also focused
     .ag-cell-range-selected:not(.ag-cell-focus),
     .ag-body-viewport:not(.ag-has-focus) .ag-cell-range-single-cell:not(.ag-cell-inline-editing) {
@@ -69,9 +65,9 @@
 
     // ltr/rtl needed so that this overrides the rtl/ltr styles of pinned column borders
     .ag-ltr, .ag-rtl {
-        .ag-has-focus .ag-cell-focus:not(.ag-cell-range-selected),
+        .ag-cell-focus:not(.ag-cell-range-selected):focus-within,
         .ag-context-menu-open .ag-cell-focus:not(.ag-cell-range-selected),
-        .ag-has-focus .ag-full-width-row.ag-row-focus .ag-cell-wrapper.ag-row-group,
+        .ag-full-width-row.ag-row-focus:focus .ag-cell-wrapper.ag-row-group,
         .ag-cell-range-single-cell,
         .ag-cell-range-single-cell.ag-cell-range-handle {
             border: 1px solid;
@@ -88,7 +84,7 @@
 
     .ag-cell.ag-selection-fill-right,
     .ag-cell.ag-selection-fill-right.ag-cell-range-selected {
-        @include ag-theme-rtl((border-right: 1px dashed), $color-param: range-selection-border-color);
+        @include ag-theme-rtl((border-right: 1px dashed !important), $color-param: range-selection-border-color, $color-param-important: true);
     }
 
     .ag-cell.ag-selection-fill-bottom,
@@ -99,7 +95,7 @@
 
     .ag-cell.ag-selection-fill-left,
     .ag-cell.ag-selection-fill-left.ag-cell-range-selected {
-        @include ag-theme-rtl((border-left: 1px dashed), $color-param: range-selection-border-color);
+        @include ag-theme-rtl((border-left: 1px dashed !important), $color-param: range-selection-border-color, $color-param-important: true);
     }
 
     %ag-selection-handle {

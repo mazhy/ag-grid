@@ -2,7 +2,6 @@ import { NumberSequence } from "../utils";
 import { RowNode } from "../entities/rowNode";
 import { RowBounds } from "./iRowModel";
 import { ServerSideTransaction, ServerSideTransactionResult } from "./serverSideTransaction";
-import { ServerSideStoreType } from "../entities/gridOptions";
 
 export interface IServerSideStore {
     clearDisplayIndexes(): void;
@@ -25,38 +24,40 @@ export interface IServerSideStore {
     getTopLevelRowDisplayedIndex(topLevelIndex: number): number;
     isLastRowIndexKnown(): boolean;
     getRowNodesInRange(firstInRange: RowNode, lastInRange: RowNode): RowNode[];
-    addStoreStates(result: ServerSideStoreState[]): void;
+    addStoreStates(result: ServerSideGroupLevelState[]): void;
 }
 
 export interface StoreRefreshAfterParams {
     valueColChanged: boolean;
     secondaryColChanged: boolean;
-    alwaysReset: boolean;
     changedColumns: string[];
 }
 
-export interface ServerSideStoreState {
-    /** Store type, `partial` or `full` */
-    type: ServerSideStoreType;
-    /** The route that identifies this store. */
+export interface ServerSideGroupLevelState {
+    /** True if infininte scrolling */
+    infiniteScroll: boolean;
+    /** The route that identifies this level. */
     route: string[];
-    /** How many rows the store has. This includes 'loading rows'. */
+    /** How many rows the level has. This includes 'loading rows'. */
     rowCount: number;
     /**
-     * Partial store only.
+     * Infinite Scroll only.
      * Whether the last row index is know.
      * */
     lastRowIndexKnown?: boolean;
-    /** Any extra info provided to the store, when data was loaded. */
+    /** Any extra info provided to the level, when data was loaded. */
     info?: any;
     /**
-     * Partial store only.
-     * Max blocks allowed in the store.
+     *Infinite Scroll only.
+     * Max blocks allowed in the infinite cache.
      */
     maxBlocksInCache?: number;
     /**
-     * Partial store only.
-     * The size (number of rows) of each block.
+     * Infinite Scroll only.
+     * The size (number of rows) of each infinite cache block.
      */
     cacheBlockSize?: number;
 }
+
+/** @deprecated use ServerSideGroupLevelState instead  */
+export interface ServerSideGroupState extends ServerSideGroupLevelState {}

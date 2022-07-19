@@ -87,12 +87,11 @@ The example below shows this in action where the following can be noted: 333
 - Group nodes are determined using the callback `gridOptions.isServerSideGroup(dataItem)`.
 - Group keys are returned from the callback `gridOptions.getServerSideGroupKey(dataItem)`.
 
-<grid-example title='Tree Data' name='tree-data' type='generated' options='{ "enterprise": true, "exampleHeight": 590, "extras": ["lodash"], "modules": ["serverside", "rowgrouping", "menu", "columnpanel"] }'></grid-example>
+<grid-example title='Tree Data' name='tree-data' type='generated' options='{ "enterprise": true, "exampleHeight": 590, "modules": ["serverside", "rowgrouping", "menu", "columnpanel"] }'></grid-example>
 
 [[note]]
 | The examples on this page use a simple method for expanding group nodes, however a
-| better approach is covered in the section
-[Preserving Group State](/server-side-model-grouping/#preserving-group-state).
+| better approach is covered in the section [Preserving Group State](/server-side-model-grouping/#preserving-group-state).
 
 ## Refreshing Tree Data
 
@@ -101,16 +100,15 @@ explained in the [SSRM Refresh](/server-side-model-refresh/).
 
 The example below shows this in action where the following can be noted:
 
-- Click **Purge Everything** to clear all caches by calling `gridOptions.api.refreshServerSideStore({ route: [], purge: true })`.
-- Click **Purge ['Kathryn Powers','Mabel Ward']** to clear a single cache by calling `gridOptions.api.refreshServerSideStore({ route: ['Kathryn Powers','Mabel Ward'], purge: true })`.
+- Click **Purge Everything** to clear all caches by calling `gridOptions.api.refreshServerSide({ route: [], purge: true })`.
+- Click **Purge ['Kathryn Powers','Mabel Ward']** to clear a single cache by calling `gridOptions.api.refreshServerSide({ route: ['Kathryn Powers','Mabel Ward'], purge: true })`.
 
-<grid-example title='Purging Tree Data' name='purging-tree-data' type='generated' options='{ "enterprise": true, "exampleHeight": 615, "extras": ["lodash"], "modules": ["serverside", "rowgrouping", "menu", "columnpanel"] }'></grid-example>
+<grid-example title='Purging Tree Data' name='purging-tree-data' type='generated' options='{ "enterprise": true, "exampleHeight": 615, "modules": ["serverside", "rowgrouping", "menu", "columnpanel"] }'></grid-example>
 
-## Sorting
+## Sorting and Filtering
 
-Sorting works in the same way when using Tree Data as when not using Tree Data with one exception. If using the Partial Store, a change in sort will refresh (reload) the data. If using the Full Store, a change in sort will result in the grid sorting the data without requiring a reload.
+Sorting and Filtering work the same while using Tree Data as it does without with a few exceptions.
 
-## Filtering
-
-Changing the filter applied to a column will always refresh (reload) the data. This is true for both the Partial Store and Full Store.
-
+- Sorting with Infinite Scroll will always behave as if [serverSideSortAllLevels](/grid-options/#reference-serverSideRowModel-serverSideSortAllLevels) is enabled.
+- Filtering with Infinite Scroll will always behave as if [serverSideFilterAllLevels](/grid-options/#reference-serverSideRowModel-serverSideFilterAllLevels) is enabled.
+- It is not possible to enable [serverSideSortOnServer](/grid-options/#reference-serverSideRowModel-serverSideSortOnServer) or [serverSideFilterOnServer](/grid-options/#reference-serverSideRowModel-serverSideFilterOnServer) while using Tree Data without Infinite Scrolling enabled.

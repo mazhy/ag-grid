@@ -26,7 +26,7 @@ const palette: AgChartThemePalette = {
     ]
 };
 
-function arrayMerge(target: any, source: any, options: any) {
+function arrayMerge(_target: any, source: any, _options: any) {
     return source;
 }
 
@@ -70,12 +70,6 @@ export class ChartTheme {
             thickness: 0,
             title: {
                 enabled: false,
-                padding: {
-                    top: 10,
-                    right: 10,
-                    bottom: 10,
-                    left: 10
-                },
                 text: 'Axis Title',
                 fontStyle: undefined,
                 fontWeight: BOLD,
@@ -106,7 +100,15 @@ export class ChartTheme {
             gridStyle: [{
                 stroke: 'rgb(219, 219, 219)',
                 lineDash: [4, 2]
-            }]
+            }],
+            crossLines: {
+                enabled: true,
+                fill: 'rgb(187,221,232)',
+                stroke: 'rgb(70,162,192)',
+                label: {
+                    enabled: true
+                }
+            }
         };
     }
 
@@ -138,9 +140,6 @@ export class ChartTheme {
             strokeOpacity: 1,
             xKey: '',
             xName: '',
-            yKeys: [],
-            yNames: [],
-            grouped: false,
             normalizedTo: undefined,
             strokeWidth: 1,
             lineDash: [0],
@@ -201,12 +200,6 @@ export class ChartTheme {
             },
             title: {
                 enabled: false,
-                padding: {
-                    top: 10,
-                    right: 10,
-                    bottom: 10,
-                    left: 10
-                },
                 text: 'Title',
                 fontStyle: undefined,
                 fontWeight: BOLD,
@@ -216,12 +209,6 @@ export class ChartTheme {
             },
             subtitle: {
                 enabled: false,
-                padding: {
-                    top: 10,
-                    right: 10,
-                    bottom: 10,
-                    left: 10
-                },
                 text: 'Subtitle',
                 fontStyle: undefined,
                 fontWeight: undefined,
@@ -305,8 +292,10 @@ export class ChartTheme {
                 strokeOpacity: 1,
                 lineDash: [0],
                 lineDashOffset: 0,
-                    marker: {
-                    ...ChartTheme.getCartesianSeriesMarkerDefaults()
+                marker: {
+                    ...ChartTheme.getCartesianSeriesMarkerDefaults(),
+                    fillOpacity: 1,
+                    strokeOpacity: 1,
                 },
                 label: {
                     enabled: false,
@@ -332,8 +321,8 @@ export class ChartTheme {
                 strokeWidth: 2,
                 fillOpacity: 1,
                 strokeOpacity: 1,
-                    marker: {
-                    ...ChartTheme.getCartesianSeriesMarkerDefaults()
+                marker: {
+                    ...ChartTheme.getCartesianSeriesMarkerDefaults(),
                 },
                 label: {
                     enabled: false,
@@ -348,8 +337,6 @@ export class ChartTheme {
                 ...ChartTheme.getSeriesDefaults(),
                 xKey: '',
                 xName: '',
-                yKeys: [],
-                yNames: [],
                 normalizedTo: undefined,
                 fillOpacity: 0.8,
                 strokeOpacity: 1,
@@ -363,9 +350,11 @@ export class ChartTheme {
                     yOffset: 3,
                     blur: 5
                 },
-                    marker: {
+                marker: {
                     ...ChartTheme.getCartesianSeriesMarkerDefaults(),
-                    enabled: false
+                    fillOpacity: 1,
+                    strokeOpacity: 1,
+                    enabled: false,
                 },
                 label: {
                     enabled: false,
@@ -447,12 +436,6 @@ export class ChartTheme {
                 ...ChartTheme.getSeriesDefaults(),
                 title: {
                     enabled: true,
-                    padding: {
-                        top: 10,
-                        right: 10,
-                        bottom: 10,
-                        left: 10
-                    },
                     text: '',
                     fontStyle: undefined,
                     fontWeight: 'bold',

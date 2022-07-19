@@ -1,19 +1,24 @@
 import classnames from 'classnames';
-import { convertMarkdown, convertUrl, escapeGenericCode, getLinkedType, getLongestNameLength, getTypeUrl, inferType } from 'components/documentation-helpers';
+import { convertMarkdown, convertUrl, getJsonFromFile, escapeGenericCode, getLinkedType, getLongestNameLength, getTypeUrl, inferType } from 'components/documentation-helpers';
 import anchorIcon from 'images/anchor';
 import React, { useState } from 'react';
 import styles from './ApiDocumentation.module.scss';
 import { ApiProps, Config, DocEntryMap, FunctionCode, ICallSignature, IEvent, ObjectCode, PropertyCall, PropertyType, SectionProps, InterfaceEntry, ChildDocEntry } from './ApiDocumentation.types';
 import Code from './Code';
-import { extractInterfaces, writeAllInterfaces, formatJsDocString, sortAndFilterProperties, addMoreLink } from './documentation-helpers';
+import { extractInterfaces, writeAllInterfaces, formatJsDocString, sortAndFilterProperties, addMoreLink, getInterfaceWithGenericParams } from './documentation-helpers';
 import { useJsonFileNodes } from './use-json-file-nodes';
 
+const IS_SSR = typeof window === "undefined"
 
 /**
  * This generates tabulated interface documentation based on information in JSON files.
  */
-export const InterfaceDocumentation: React.FC<any> = ({ interfacename, framework, overridesrc, names = "", exclude = "", config = {} }): any => {
-    const nodes = useJsonFileNodes();
+export const InterfaceDocumentation: React.FC<any> = ({ jsonData,interfacename, framework, overridesrc, names = "", exclude = "", wrapNamesAt = null, config = {} }): any => {
+    if(IS_SSR) {
+        return null;
+    }
+
+    const nodes = jsonData ? null : useJsonFileNodes();
     let codeSrcProvided = [interfacename];
     let namesArr = [];
     let excludeArr = exclude && exclude.length > 0 ? JSON.parse(exclude) : [];
@@ -23,9 +28,13 @@ export const InterfaceDocumentation: React.FC<any> = ({ interfacename, framework
         config = { overrideBottomMargin: "1rem", ...config, };
     }
 
+    if (wrapNamesAt) {
+        config = { wrapNamesAt: parseFloat(wrapNamesAt), ...config, };
+    }
+
     const { lookupRoot = 'grid-api' } = config;
-    const interfaceLookup = getJsonFromFile(nodes, undefined, `${lookupRoot}/interfaces.AUTO.json`);
-    const codeLookup = getJsonFromFile(nodes, undefined, `${lookupRoot}/doc-interfaces.AUTO.json`);
+    const interfaceLookup = getJsonFromFile(jsonData, nodes, undefined, `${lookupRoot}/interfaces.AUTO.json`);
+    const codeLookup = getJsonFromFile(jsonData, nodes, undefined, `${lookupRoot}/doc-interfaces.AUTO.json`);
 
     const lookups = { codeLookup: codeLookup[interfacename], interfaces: interfaceLookup };
     let hideHeader = true;
@@ -51,7 +60,7 @@ export const InterfaceDocumentation: React.FC<any> = ({ interfacename, framework
     let overrides = {};
     let interfaceOverrides = {};
     if (overridesrc) {
-        overrides = getJsonFromFile(nodes, undefined, overridesrc);
+        overrides = getJsonFromFile(jsonData, nodes, undefined, overridesrc);
         interfaceOverrides = overrides[interfacename];
         if (!interfaceOverrides) {
             throw new Error(`overrideSrc:${overridesrc} provided but does not contain expected section named: '${interfacename}'!`);
@@ -85,9 +94,10 @@ export const InterfaceDocumentation: React.FC<any> = ({ interfacename, framework
 
     ordered.map(([k, v]) => orderedProps[k] = v);
 
+    const interfaceDeclaration = getInterfaceWithGenericParams(interfacename, li.meta);
     const description = config.description != null ?
         config.description :
-        `Properties available on the \`${interfacename}\` interface.`;
+        `Properties available on the \`${interfaceDeclaration}\` interface.`;
     let properties: DocEntryMap = {
         [interfacename]: {
             ...orderedProps,
@@ -109,7 +119,11 @@ export const InterfaceDocumentation: React.FC<any> = ({ interfacename, framework
  * information about different parts of an API in multiple places across the website while pulling the information
  * from one source of truth, so we only have to update one file when the documentation needs to change.
  */
-export const ApiDocumentation: React.FC<ApiProps> = ({ pageName, framework, source, sources, section, names = "", config = {} as Config }): any => {
+export const ApiDocumentation: React.FC<ApiProps> = ({ pageName, framework, jsonData, source, sources, section, names = "", config = {} as Config }): any => {
+    if(IS_SSR) {
+        return null;
+    }
+
     const nodes = useJsonFileNodes();
 
     if (source) {
@@ -126,7 +140,7 @@ export const ApiDocumentation: React.FC<ApiProps> = ({ pageName, framework, sour
         config = { hideMore: true, overrideBottomMargin: "1rem", ...config, };
     }
 
-    const propertiesFromFiles = sources.map(s => getJsonFromFile(nodes, pageName, s));
+    const propertiesFromFiles = sources.map(s => getJsonFromFile(jsonData, nodes, pageName, s));
 
 
     const configs = propertiesFromFiles.map(p => p['_config_']);
@@ -141,14 +155,15 @@ export const ApiDocumentation: React.FC<ApiProps> = ({ pageName, framework, sour
         }
         if (c.codeSrc) {
             codeSrcProvided = [...codeSrcProvided, c.codeSrc];
-            codeLookup = { ...codeLookup, ...getJsonFromFile(nodes, undefined, c.codeSrc) };
+            codeLookup = { ...codeLookup, ...getJsonFromFile(jsonData, nodes, undefined, c.codeSrc) };
         }
 
         if (c.suppressMissingPropCheck) {
             config = { ...config, suppressMissingPropCheck: true }
         }
     })
-    const interfaceLookup = getJsonFromFile(nodes, undefined, 'grid-api/interfaces.AUTO.json');
+
+    const interfaceLookup = getJsonFromFile(jsonData, nodes, undefined, 'grid-api/interfaces.AUTO.json');
     const lookups = { codeLookup, interfaces: interfaceLookup };
     config = { ...config, lookups, codeSrcProvided }
 
@@ -204,6 +219,8 @@ const Section: React.FC<SectionProps> = ({ framework, title, properties, config 
 
     let header = null;
 
+    const pattern = new RegExp(config.namePattern || ".*");
+
     if (!config.isSubset) {
         const headerLevel = config.headerLevel || breadcrumbKeys.length + 1;
         const HeaderTag = `h${headerLevel}`;
@@ -230,7 +247,7 @@ const Section: React.FC<SectionProps> = ({ framework, title, properties, config 
     const rows = [];
     const objectProperties: DocEntryMap = {};
 
-    let longestNameLength = 25;
+    let leftColumnWidth = 25;
     let processed = new Set();
     Object.entries(properties).forEach(([name, definition]) => {
         if (name === 'meta' || (names.length > 0 && !names.includes(name))) {
@@ -238,10 +255,18 @@ const Section: React.FC<SectionProps> = ({ framework, title, properties, config 
         }
         processed.add(name);
 
-        const length = getLongestNameLength(name);
-        if (longestNameLength < length) {
-            longestNameLength = length;
+        if (!pattern.test(name)) {
+            return;
         }
+
+        const length = getLongestNameLength(name);
+        if (leftColumnWidth < length) {
+            leftColumnWidth = length;
+        }
+        if (config.maxLeftColumnWidth < leftColumnWidth) {
+            leftColumnWidth = config.maxLeftColumnWidth
+        }
+        
         const gridOptionProperty = config.lookups.codeLookup[name];
 
         rows.push(<Property key={name} framework={framework} id={id} name={name} definition={definition} config={{ ...config, gridOpProp: gridOptionProperty, interfaceHierarchyOverrides: definition.interfaceHierarchyOverrides }} />);
@@ -261,12 +286,14 @@ const Section: React.FC<SectionProps> = ({ framework, title, properties, config 
         })
     }
 
+    const wrap = !!config.maxLeftColumnWidth;
+
     return <>
         {header}
         <table className={styles['reference']} style={config.overrideBottomMargin ? { "marginBottom": config.overrideBottomMargin } : {}}>
             <colgroup>
                 <col className={styles['reference__expander-cell']} ></col>
-                <col style={{ width: longestNameLength + 'ch' }}></col>
+                <col className={wrap ? styles['reference__name-cell__wrap'] : undefined} style={{ width: leftColumnWidth + 'ch' }}></col>
                 <col></col>
             </colgroup>
             <tbody>
@@ -365,6 +392,8 @@ const Property: React.FC<PropertyCall> = ({ framework, id, name, definition, con
         </tr>
     }
 
+    const wrap = !!config.maxLeftColumnWidth;
+
     return <tr>
         <td className={styles['reference__expander-cell']} onClick={() => setExpanded(!isExpanded)} role="presentation">
             {showAdditionalDetails && <div className={styles['reference__expander']}>
@@ -373,7 +402,7 @@ const Property: React.FC<PropertyCall> = ({ framework, id, name, definition, con
         </td>
         <td role="presentation">
             <h6 id={`reference-${id}-${name}`} style={{ display: 'inline-flex' }} className="side-menu-exclude" >
-                <code onClick={() => setExpanded(!isExpanded)} dangerouslySetInnerHTML={{ __html: displayName }} className={styles['reference__name']}></code>
+                <code onClick={() => setExpanded(!isExpanded)} dangerouslySetInnerHTML={{ __html: displayName }} className={wrap ? `${styles['reference__name']} ${styles['reference__name__wrap']}`: styles['reference__name']}></code>
                 <a href={`#reference-${id}-${name}`} className="anchor after" style={{ fontSize: 'small' }}>{anchorIcon}</a>
             </h6>
 
@@ -635,20 +664,6 @@ const getInterfacesToWrite = (name, definition, config) => {
     return interfacesToWrite;
 };
 
-const getJsonFromFile = (nodes, pageName, source) => {
-    const json = nodes.filter(n => n.relativePath === source || n.relativePath === `${pageName}/${source}`)[0];
-
-    if (json) {
-        try {
-            return JSON.parse(json.internal.content);
-        } catch (e) {
-            throw new Error(`Unable to JSON parse: ${json.relativePath} ; Reason: ${e.message}`);
-        }
-    }
-
-    throw new Error(`Could not find JSON for source ${source}`);
-};
-
 const mergeObjects = objects => {
     return objects.reduce((result, value) => Object.assign(result, value), {});
 };
@@ -695,6 +710,10 @@ function getPropertyType(type: string | PropertyType, config: Config) {
             }
         }
     }
+    // We hide generics from this part of the display for simplicity
+    propertyType = propertyType.replace(/<TData>/g, '');
+    //.replace(/TData\[\]/g, 'any[]').replace(/TData/g, 'any');
+
     return propertyType;
 }
 

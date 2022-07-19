@@ -27,7 +27,7 @@ export class PropertyKeys {
         'rowHeight', 'detailRowHeight', 'rowBuffer', 'colWidth', 'headerHeight', 'groupHeaderHeight', 'floatingFiltersHeight',
         'pivotHeaderHeight', 'pivotGroupHeaderHeight', 'groupDefaultExpanded', 'minColWidth', 'maxColWidth', 'viewportRowModelPageSize',
         'viewportRowModelBufferSize', 'autoSizePadding', 'maxBlocksInCache', 'maxConcurrentDatasourceRequests', 'tooltipShowDelay',
-        'tooltipHideDelay', 'cacheOverflowSize', 'paginationPageSize', 'cacheBlockSize', 'infiniteInitialRowCount', 'scrollbarWidth',
+        'tooltipHideDelay', 'cacheOverflowSize', 'paginationPageSize', 'cacheBlockSize', 'infiniteInitialRowCount', 'serverSideInitialRowCount', 'scrollbarWidth',
         'batchUpdateWaitMillis', 'asyncTransactionWaitMillis', 'blockLoadDebounceMillis', 'keepDetailRowsCount',
         'undoRedoCellEditingLimit', 'cellFlashDelay', 'cellFadeDelay', 'tabIndex'
     ];
@@ -41,7 +41,7 @@ export class PropertyKeys {
         'skipHeaderOnAutoSize', 'suppressParentsInRowNodes', 'suppressColumnMoveAnimation', 'suppressMovableColumns',
         'suppressFieldDotNotation', 'enableRangeSelection', 'enableRangeHandle', 'enableFillHandle', 'suppressClearOnFillReduction',
         'deltaSort', 'suppressTouch', 'suppressAsyncEvents', 'allowContextMenuWithControlKey', 'suppressContextMenu',
-        'rememberGroupStateWhenNewData', 'enableCellChangeFlash', 'suppressDragLeaveHidesColumns', 'suppressMiddleClickScrolls',
+        'rememberGroupStateWhenNewData', 'enableCellChangeFlash', 'suppressDragLeaveHidesColumns', 'suppressRowGroupHidesColumns', 'suppressMiddleClickScrolls',
         'suppressPreventDefaultOnMouseWheel', 'suppressCopyRowsToClipboard', 'copyHeadersToClipboard', 'copyGroupHeadersToClipboard',
         'pivotMode', 'suppressAggFuncInHeader', 'suppressColumnVirtualisation', 'suppressAggAtRootLevel', 'suppressFocusAfterRefresh',
         'functionsPassive', 'functionsReadOnly', 'animateRows', 'groupSelectsFiltered', 'groupRemoveSingleChildren',
@@ -54,15 +54,17 @@ export class PropertyKeys {
         'suppressCsvExport', 'treeData', 'masterDetail', 'suppressMultiRangeSelection', 'enterMovesDownAfterEdit', 'enterMovesDown',
         'suppressPropertyNamesCheck', 'rowMultiSelectWithClick', 'suppressEnterpriseResetOnNewColumns',
         'suppressRowHoverHighlight', 'suppressRowTransform', 'suppressClipboardPaste', 'suppressLastEmptyLineOnPaste',
-        'serverSideSortingAlwaysResets', 'suppressSetColumnStateEvents', 'suppressColumnStateEvents', 'enableCharts', 'deltaColumnMode',
+        'suppressSetColumnStateEvents', 'suppressColumnStateEvents', 'enableCharts', 'deltaColumnMode',
         'suppressMaintainUnsortedOrder', 'enableCellTextSelection', 'suppressBrowserResizeObserver', 'suppressMaxRenderedRowRestriction',
         'excludeChildrenWhenTreeDataFiltering', 'tooltipMouseTrack', 'keepDetailRows', 'paginateChildRows', 'preventDefaultOnContextMenu',
         'undoRedoCellEditing', 'allowDragFromColumnsToolPanel', 'immutableData', 'immutableColumns', 'pivotSuppressAutoColumn',
         'suppressExpandablePivotGroups', 'applyColumnDefOrder', 'debounceVerticalScrollbar', 'detailRowAutoHeight',
-        'serverSideFilteringAlwaysResets', 'suppressAggFilteredOnly', 'showOpenedGroup', 'suppressClipboardApi',
+        'serverSideFilteringAlwaysResets', 'serverSideSortingAlwaysResets', 'serverSideSortAllLevels', 'serverSideFilterAllLevels',
+        'serverSideSortOnServer', 'serverSideFilterOnServer', 'suppressAggFilteredOnly', 'showOpenedGroup', 'suppressClipboardApi',
         'suppressModelUpdateAfterUpdateTransaction', 'stopEditingWhenCellsLoseFocus', 'maintainColumnOrder', 'groupMaintainOrder',
         'columnHoverHighlight', 'reactUi', 'suppressReactUi', 'readOnlyEdit', 'suppressRowVirtualisation',
-        'resetRowDataOnUpdate', 'removePivotHeaderRowWhenSingleValueColumn', 'suppressCopySingleCellRanges'
+        'resetRowDataOnUpdate', 'removePivotHeaderRowWhenSingleValueColumn', 'suppressCopySingleCellRanges',
+        'groupRowsSticky', 'serverSideInfiniteScroll'
     ];
 
     /** You do not need to include event callbacks in this list, as they are generated automatically. */
@@ -71,7 +73,7 @@ export class PropertyKeys {
         'groupRowRenderer', 'groupRowRendererFramework', 'isExternalFilterPresent', 'getRowHeight', 'doesExternalFilterPass',
         'getRowClass', 'getRowStyle', 'getContextMenuItems', 'getMainMenuItems', 'processRowPostCreate', 'processCellForClipboard',
         'groupRowAggNodes', 'getGroupRowAgg', 'getRowNodeId', 'isFullWidthCell', 'isFullWidthRow', 'fullWidthCellRenderer', 'fullWidthCellRendererFramework',
-        'processSecondaryColDef', 'processSecondaryColGroupDef',
+        'processSecondaryColDef', 'processSecondaryColGroupDef', 'processPivotResultColDef', 'processPivotResultColGroupDef',
         'getBusinessKeyForNode', 'sendToClipboard', 'navigateToNextHeader',
         'tabToNextHeader', 'navigateToNextCell', 'tabToNextCell', 'processCellFromClipboard', 'getDocument', 'postProcessPopup',
         'getChildCount', 'getDataPath', 'loadingCellRenderer', 'loadingCellRendererFramework', 'loadingOverlayComponent',
@@ -79,6 +81,7 @@ export class PropertyKeys {
         'detailCellRendererFramework', 'isRowMaster', 'isRowSelectable', 'postSort', 'postSortRows', 'processHeaderForClipboard', 'processGroupHeaderForClipboard',
         'paginationNumberFormatter', 'processDataFromClipboard', 'getServerSideGroupKey', 'isServerSideGroup', 'suppressKeyboardEvent',
         'createChartContainer', 'getChartToolbarItems', 'fillOperation', 'isApplyServerSideTransaction', 'getServerSideStoreParams',
+        'getServerSideGroupLevelParams',
         'isServerSideGroupOpenByDefault', 'isGroupOpenByDefault', 'defaultGroupSortComparator', 'defaultGroupOrderComparator', 'initialGroupOrderComparator',
         'loadingCellRendererSelector', 'getRowId', 'groupAggFiltering'
     ];

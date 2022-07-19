@@ -26,10 +26,9 @@ const gridOptions: GridOptions = {
           'October',
           'November',
           'December',
-        ]
-
+        ];
         // sorts 'months' in chronological order
-        return months.indexOf(a) - months.indexOf(b)
+        return months.indexOf(a) - months.indexOf(b);
       },
     },
     { field: 'salesRep' },
@@ -49,7 +48,7 @@ const gridOptions: GridOptions = {
   },
   groupDefaultExpanded: 1,
   rowData: getData(),
-}
+};
 
 // setup the grid after the page has finished loading
 document.addEventListener('DOMContentLoaded', function () {

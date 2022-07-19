@@ -13,7 +13,7 @@ const columnDefs: ColDef[] = [
   { field: 'bronze' },
 ]
 
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   defaultColDef: {
     editable: true,
     sortable: true,
@@ -32,7 +32,7 @@ const gridOptions: GridOptions = {
   // use the server-side row model
   rowModelType: 'serverSide',
 
-  serverSideStoreType: 'partial',
+  serverSideInfiniteScroll: true,
 
   // fetch 100 rows per at a time
   cacheBlockSize: 100,

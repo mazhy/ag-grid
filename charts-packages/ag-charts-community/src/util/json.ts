@@ -58,6 +58,18 @@ export function jsonDiff<T extends any>(source: T, target: T, opts?: { stringify
         return null;
     }
 
+    if (targetType === 'primitive') {
+        if (sourceType !== 'primitive') {
+            return { ...target };
+        }
+
+        if (source !== target) {
+            return target;
+        }
+
+        return null;
+    }
+
     const lhs = source || {} as any;
     const rhs = target || {} as any;
 
@@ -217,7 +229,7 @@ export function jsonApply<
     params: {
         path?: string,
         matcherPath?: string,
-        skip?: (keyof Source | keyof Target)[],
+        skip?: string[],
         constructors?: Record<string, new () => any>,
         allowedTypes?: Record<string, ReturnType<typeof classify>[]>,
     } = {},
@@ -235,15 +247,15 @@ export function jsonApply<
 
     const targetType = classify(target);
     for (const property in source) {
-        if (skip.indexOf(property) >= 0) { continue; }
+        const propertyMatcherPath = `${matcherPath ? matcherPath + '.' : ''}${property}`;
+        if (skip.indexOf(propertyMatcherPath) >= 0) { continue; }
 
         const newValue = source[property];
         const propertyPath = `${path ? path + '.' : ''}${property}`;
-        const propertyMatcherPath = `${matcherPath ? matcherPath + '.' : ''}${property}`;
         const targetAny = (target as any);
         const targetClass = targetAny.constructor;
         const currentValue = targetAny[property];
-        const ctr = constructors[property];
+        let ctr = constructors[property] ?? constructors[propertyMatcherPath];
         try {
             const currentValueType = classify(currentValue);
             const newValueType = classify(newValue);
@@ -262,7 +274,13 @@ export function jsonApply<
             }
 
             if (newValueType === 'array') {
-                targetAny[property] = newValue;
+                ctr = ctr ?? constructors[`${propertyMatcherPath}[]`];
+                if (ctr != null) {
+                    const newValueArray: any[] = newValue as any;
+                    targetAny[property] = newValueArray.map((v) => jsonApply(new ctr(), v, {...params, path: propertyPath, matcherPath: propertyMatcherPath + '[]' }));
+                } else {
+                    targetAny[property] = newValue;
+                }
             } else if (newValueType === 'class-instance') {
                 targetAny[property] = newValue;
             } else if (newValueType === 'object') {

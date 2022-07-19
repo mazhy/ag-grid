@@ -1,7 +1,7 @@
 import { Component } from "@angular/core";
 
-import "@ag-grid-community/core/dist/styles/ag-grid.css";
-import "@ag-grid-community/core/dist/styles/ag-theme-material.css";
+import "@ag-grid-community/styles/ag-grid.css";
+import "@ag-grid-community/styles/ag-theme-material.css";
 
 import { MatCheckboxComponent } from "./mat-checkbox.component";
 import { MatInputComponent } from "./mat-input.component";
@@ -12,7 +12,14 @@ import { ColDef, GridOptions, Module } from "@ag-grid-community/core";
 
 @Component({
     selector: "my-app",
-    templateUrl: "./mat-editor-one.component.html"
+    template: `
+    <div style="width: 100%;">
+        <ag-grid-angular style="width: 100%; height: 450px;" class="ag-theme-material"
+                     [gridOptions]="gridOptions"
+                     [modules]="modules">
+        </ag-grid-angular>
+    </div>
+    `
 })
 export class MatEditorComponentOne {
     public gridOptions: GridOptions;

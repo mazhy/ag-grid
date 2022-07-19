@@ -1,6 +1,6 @@
 import { Grid, GridOptions, IServerSideDatasource, GetRowIdParams } from '@ag-grid-community/core'
 declare var FakeServer: any;
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicDataWithId> = {
   columnDefs: [
     { field: 'country', rowGroup: true, hide: true },
     { field: 'year', rowGroup: true, hide: true },
@@ -36,7 +36,6 @@ const gridOptions: GridOptions = {
   },
   // use the server-side row model
   rowModelType: 'serverSide',
-  serverSideStoreType: 'full',
 
   enableCellChangeFlash: true,
   suppressAggFuncInHeader: true,
@@ -50,7 +49,7 @@ var versionCounter = 1
 function refreshCache(route?: string[]) {
   versionCounter++
   var purge = (document.querySelector('#purge') as HTMLInputElement).checked === true
-  gridOptions.api!.refreshServerSideStore({ route: route, purge: purge })
+  gridOptions.api!.refreshServerSide({ route: route, purge: purge })
 }
 
 function getServerSideDatasource(server: any): IServerSideDatasource {

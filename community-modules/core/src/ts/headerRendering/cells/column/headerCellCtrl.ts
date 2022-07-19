@@ -1,6 +1,6 @@
 import { ColumnApi } from "../../../columns/columnApi";
 import { ColumnModel } from "../../../columns/columnModel";
-import { UserCompDetails, UserComponentFactory } from "../../../components/framework/userComponentFactory";
+import { UserCompDetails } from "../../../components/framework/userComponentFactory";
 import { KeyCode } from '../../../constants/keyCode';
 import { Autowired, PreDestroy } from "../../../context/context";
 import { DragAndDropService, DragItem, DragSource, DragSourceType } from "../../../dragAndDrop/dragAndDropService";
@@ -8,7 +8,6 @@ import { Column } from "../../../entities/column";
 import { Events } from "../../../eventKeys";
 import { GridApi } from "../../../gridApi";
 import { IMenuFactory } from "../../../interfaces/iMenuFactory";
-import { Beans } from "../../../rendering/beans";
 import { ColumnHoverService } from "../../../rendering/columnHoverService";
 import { SetLeftFeature } from "../../../rendering/features/setLeftFeature";
 import { SortController } from "../../../sortController";
@@ -22,7 +21,9 @@ import { HoverFeature } from "../hoverFeature";
 import { HeaderComp, IHeader, IHeaderParams } from "./headerComp";
 import { ResizeFeature } from "./resizeFeature";
 import { SelectAllFeature } from "./selectAllFeature";
-
+import { getElementSize } from "../../../utils/dom";
+import { ResizeObserverService } from "../../../misc/resizeObserverService";
+import { noop } from "../../../utils/function";
 export interface IHeaderCellComp extends IAbstractHeaderCellComp, ITooltipFeatureComp {
     setWidth(width: string): void;
     addOrRemoveCssClass(cssClassName: string, on: boolean): void;
@@ -35,15 +36,14 @@ export interface IHeaderCellComp extends IAbstractHeaderCellComp, ITooltipFeatur
 
 export class HeaderCellCtrl extends AbstractHeaderCellCtrl {
 
-    @Autowired('columnModel') private columnModel: ColumnModel;
-    @Autowired('columnHoverService') private columnHoverService: ColumnHoverService;
-    @Autowired('beans') protected beans: Beans;
-    @Autowired('sortController') private sortController: SortController;
-    @Autowired('menuFactory') private menuFactory: IMenuFactory;
-    @Autowired('dragAndDropService') private dragAndDropService: DragAndDropService;
-    @Autowired('gridApi') private gridApi: GridApi;
-    @Autowired('columnApi') private columnApi: ColumnApi;
-    @Autowired('userComponentFactory') private userComponentFactory: UserComponentFactory;
+    @Autowired('columnModel') private readonly columnModel: ColumnModel;
+    @Autowired('columnHoverService') private readonly columnHoverService: ColumnHoverService;
+    @Autowired('sortController') private readonly sortController: SortController;
+    @Autowired('menuFactory') private readonly menuFactory: IMenuFactory;
+    @Autowired('dragAndDropService') private readonly dragAndDropService: DragAndDropService;
+    @Autowired('resizeObserverService') private readonly resizeObserverService: ResizeObserverService;
+    @Autowired('gridApi') private readonly gridApi: GridApi;
+    @Autowired('columnApi') private readonly columnApi: ColumnApi;
 
     private colDefVersion: number;
 
@@ -73,7 +73,7 @@ export class HeaderCellCtrl extends AbstractHeaderCellCtrl {
         this.column = column;
     }
 
-    public setComp(comp: IHeaderCellComp, eGui: HTMLElement, eResize: HTMLElement): void {
+    public setComp(comp: IHeaderCellComp, eGui: HTMLElement, eResize: HTMLElement, eHeaderCompWrapper: HTMLElement): void {
         super.setGui(eGui);
         this.comp = comp;
 
@@ -84,6 +84,8 @@ export class HeaderCellCtrl extends AbstractHeaderCellCtrl {
         this.setupMovingCss();
         this.setupMenuClass();
         this.setupSortableClass();
+        this.setupWrapTextClass();
+        this.setupAutoHeight(eHeaderCompWrapper);
         this.addColumnHoverListener();
         this.setupFilterCss();
         this.setupColId();
@@ -167,6 +169,8 @@ export class HeaderCellCtrl extends AbstractHeaderCellCtrl {
     }
 
     protected handleKeyDown(e: KeyboardEvent): void {
+        super.handleKeyDown(e);
+
         if (e.key === KeyCode.SPACE) {
             this.selectAllFeature.onSpaceKeyPressed(e);
         }
@@ -195,7 +199,7 @@ export class HeaderCellCtrl extends AbstractHeaderCellCtrl {
         return this.menuEnabled;
     }
 
-    protected onFocusIn(e: FocusEvent) {
+    private onFocusIn(e: FocusEvent) {
         if (!this.getGui().contains(e.relatedTarget as HTMLElement)) {
             const rowIndex = this.getRowIndex();
             this.focusService.setFocusedHeader(rowIndex, this.column);
@@ -204,7 +208,7 @@ export class HeaderCellCtrl extends AbstractHeaderCellCtrl {
         this.setActiveHeader(true);
     }
 
-    protected onFocusOut(e: FocusEvent) {
+    private onFocusOut(e: FocusEvent) {
         if (
             this.getGui().contains(e.relatedTarget as HTMLElement)
         ) { return; }
@@ -267,14 +271,27 @@ export class HeaderCellCtrl extends AbstractHeaderCellCtrl {
 
         if (!this.draggable) { return; }
 
+        const hideColumnOnExit = !this.gridOptionsWrapper.isSuppressDragLeaveHidesColumns();
         this.moveDragSource = {
             type: DragSourceType.HeaderCell,
             eElement: eSource,
-            defaultIconName: DragAndDropService.ICON_HIDE,
+            defaultIconName: hideColumnOnExit ? DragAndDropService.ICON_HIDE : DragAndDropService.ICON_NOT_ALLOWED,
             getDragItem: () => this.createDragItem(),
             dragItemName: this.displayName,
             onDragStarted: () => this.column.setMoving(true, "uiColumnMoved"),
-            onDragStopped: () => this.column.setMoving(false, "uiColumnMoved")
+            onDragStopped: () => this.column.setMoving(false, "uiColumnMoved"),
+            onGridEnter: (dragItem) => {
+                if (hideColumnOnExit) {
+                    const unlockedColumns = dragItem?.columns?.filter(col => !col.getColDef().lockVisible) || [];
+                    this.columnModel.setColumnsVisible(unlockedColumns, true, "uiColumnMoved");
+                }
+            },
+            onGridExit: (dragItem) => {
+                if (hideColumnOnExit) {
+                    const unlockedColumns = dragItem?.columns?.filter(col => !col.getColDef().lockVisible) || [];
+                    this.columnModel.setColumnsVisible(unlockedColumns, false, "uiColumnMoved");
+                }
+            },
         };
 
         this.dragAndDropService.addDragSource(this.moveDragSource, true);
@@ -430,6 +447,82 @@ export class HeaderCellCtrl extends AbstractHeaderCellCtrl {
 
         this.addRefreshFunction(updateSortableCssClass);
         this.addManagedListener(this.column, Column.EVENT_SORT_CHANGED, this.refreshAriaSort.bind(this));
+    }
+
+    private setupWrapTextClass() {
+        const listener = () => {
+            const wrapText = !!this.column.getColDef().wrapHeaderText;
+            this.comp.addOrRemoveCssClass('ag-header-cell-wrap-text', wrapText);
+        };
+        listener();
+        this.addRefreshFunction(listener);
+    }
+
+    private setupAutoHeight(wrapperElement: HTMLElement) {
+        const measureHeight = (timesCalled: number) => {
+            if (!this.isAlive()) { return; }
+
+            const { paddingTop, paddingBottom } = getElementSize(this.getGui());
+            const wrapperHeight = wrapperElement.offsetHeight;
+            const autoHeight = wrapperHeight + paddingTop + paddingBottom;
+
+            if (timesCalled < 5) {
+                // if not in doc yet, means framework not yet inserted, so wait for next VM turn,
+                // maybe it will be ready next VM turn
+                const doc = this.beans.gridOptionsWrapper.getDocument();
+                const notYetInDom = !doc || !doc.contains(wrapperElement);
+
+                // this happens in React, where React hasn't put any content in. we say 'possibly'
+                // as a) may not be React and b) the cell could be empty anyway
+                const possiblyNoContentYet = autoHeight == 0;
+
+                if (notYetInDom || possiblyNoContentYet) {
+                    this.beans.frameworkOverrides.setTimeout(() => measureHeight(timesCalled + 1), 0);
+                    return;
+                }
+            }
+            this.columnModel.setColumnHeaderHeight(this.column, autoHeight);
+        };
+
+        let isMeasuring = false;
+        let stopResizeObserver: (() => void) | undefined;
+
+        const checkMeasuring = () => {
+            const newValue = this.column.isAutoHeaderHeight();
+            if (newValue && !isMeasuring) {
+                startMeasuring();
+            }
+            if (!newValue && isMeasuring) {
+                stopMeasuring();
+            }
+        };
+
+        const startMeasuring = () => {
+            isMeasuring = true;
+            measureHeight(0);
+            stopResizeObserver = this.resizeObserverService.observeResize(wrapperElement, () => measureHeight(0));
+        };
+
+        const stopMeasuring = () => {
+            isMeasuring = false;
+            stopResizeObserver && stopResizeObserver();
+            stopResizeObserver = undefined;
+        };
+
+        checkMeasuring();
+
+        this.addDestroyFunc(() => stopMeasuring());
+
+        // In theory we could rely on the resize observer for everything - but since it's debounced
+        // it can be a little janky for smooth movement. in this case its better to react to our own events
+        // And unfortunately we cant _just_ rely on our own events, since custom components can change whenever
+        this.addManagedListener(this.column, Column.EVENT_WIDTH_CHANGED, () => isMeasuring && measureHeight(0));
+        // Displaying the sort icon changes the available area for text, so sort changes can affect height
+        this.addManagedListener(this.column, Column.EVENT_SORT_CHANGED, () => {
+            // Rendering changes for sort, happen after the event... not ideal
+            isMeasuring && this.beans.frameworkOverrides.setTimeout(() => measureHeight(0));
+        });
+        this.addRefreshFunction(checkMeasuring);
     }
 
     private refreshAriaSort(): void {

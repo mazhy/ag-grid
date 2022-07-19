@@ -30,7 +30,6 @@ const gridOptions: GridOptions = {
     return params.data.product
   },
   rowModelType: 'serverSide',
-  serverSideStoreType: 'full',
   columnDefs: columnDefs,
 }
 
@@ -107,7 +106,7 @@ function onBtAdd() {
 }
 
 function onBtRefresh() {
-  gridOptions.api!.refreshServerSideStore({ purge: true })
+  gridOptions.api!.refreshServerSide({ purge: true })
 }
 
 // setup the grid after the page has finished loading

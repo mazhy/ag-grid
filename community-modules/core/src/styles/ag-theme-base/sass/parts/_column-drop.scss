@@ -8,6 +8,7 @@
         height: ag-param(grid-size) * 4;
         padding: 0 ag-param(grid-size) * 0.5;
         border: 1px solid transparent;
+        cursor: pointer;
     }
 
     @include ag-keyboard-focus((ag-column-drop-cell), 2px);
@@ -118,4 +119,14 @@
     @include ag-keyboard-focus((
         ag-select-agg-func-virtual-list-item
     ), 1px);
+
+
+    // column sort direction indicator
+    .ag-sort-indicator-container {
+        display: flex;
+    }
+
+    .ag-sort-indicator-icon {
+        @include ag-theme-rtl(( padding-left: ag-param(grid-size) ));
+    }
 }

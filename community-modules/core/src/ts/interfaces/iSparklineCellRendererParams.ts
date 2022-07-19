@@ -1,6 +1,6 @@
 import { ICellRendererParams } from "../rendering/cellRenderers/iCellRenderer";
 
-export interface ISparklineCellRendererParams extends ICellRendererParams {
+export interface ISparklineCellRendererParams<TData = any> extends ICellRendererParams<TData> {
     sparklineOptions?: SparklineOptions;
 }
 
@@ -17,7 +17,7 @@ export interface BaseSparklineOptions {
     yKey?: string;
     /** Configuration for the padding in pixels shown around the sparklines. */
     padding?: PaddingOptions;
-    /** The options for the x-axis in the sparklines. */
+    /** The options for the axis line in the sparklines. */
     axis?: SparklineAxisOptions;
     /** The configuration for the highlighting used when the items are hovered over. */
     highlightStyle?: HighlightStyleOptions;
@@ -118,19 +118,33 @@ export interface BarSparklineOptions extends BaseSparklineOptions {
 }
 
 export interface SparklineLabelOptions {
-    /** Set to true to enable labels. */
+    /**
+     * Set to true to enable labels.
+     * Default: `false`
+     */
     enabled?: boolean;
-    /** Set size of the font. */
+    /**
+     * Set size of the font.
+     * Default: `8`
+     */
     fontSize?: number;
-    /** Specify the font for the label text. */
+    /**
+     * Specify the font for the label text.
+     * Default: `Verdana, sans-serif`
+     */
     fontFamily?: string;
     /** Specify the font style for the label text. */
     fontStyle?: 'normal' | 'italic' | 'oblique';
     /** Set how thick or thin characters in label text should be displayed. */
     fontWeight?: 'normal' | 'bold' | 'bolder' | 'lighter' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900';
-    /** Set the color of the label text. The color can be specified by a color name, a HEX or an RGB value. */
+    /**
+     * Set the color of the label text. The color can be specified by a color name, a HEX or an RGB value.
+     * Default: `rgba(70, 70, 70, 1)`
+     */
     color?: string;
-    /** A callback function to return the text to be displayed as the label, based on the value represented by the column or bar. By default the values are simply stringified. */
+    /**
+     * A callback function to return the text to be displayed as the label, based on the value represented by the column or bar.
+     * By default the values are simply stringified. */
     formatter?: (params: LabelFormatterParams) => string;
     /** Where to render labels relative to the segments.
     * Default: `insideEnd`
@@ -170,15 +184,15 @@ export interface PaddingOptions {
 }
 
 export interface SparklineAxisOptions {
-    /** The type of x-axis used to plot the data.
+    /** The type of axis used to plot the data.
      * Default: `'category'`
      */
     type?: AxisType;
-    /** The CSS colour value for the outline of the horizontal axis line.
+    /** The CSS colour value for the outline of the axis line.
      * Default: `'rgb(204, 214, 235)'`
      */
     stroke?: string;
-    /** The thickness in pixels for the stroke of the horizontal axis line.
+    /** The thickness in pixels for the stroke of the axis line.
      * Default: `1`
      */
     strokeWidth?: number;

@@ -12,7 +12,9 @@ const options: AgChartOptions = {
         series: {
           strokeWidth: 0,
           highlightStyle: {
-            strokeWidth: 1,
+            item: {
+              strokeWidth: 1,
+            },
           },
         },
       },
@@ -44,7 +46,8 @@ const options: AgChartOptions = {
       position: "left",
       label: {
         formatter: (params) => {
-          return params.value / 1000 + "M"
+          const formatted = params.value / 1000 + "M";
+          return formatted.indexOf('.') >= 0 ? undefined : formatted;
         },
       },
     },

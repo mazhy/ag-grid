@@ -1,6 +1,6 @@
-import { Grid, GetServerSideStoreParamsParams, GetRowIdParams, GridOptions, IServerSideDatasource, IServerSideGetRowsParams, IsServerSideGroupOpenByDefaultParams, ServerSideStoreParams } from '@ag-grid-community/core'
+import { Grid, GetServerSideGroupLevelParamsParams, GetRowIdParams, GridOptions, IServerSideDatasource, IServerSideGetRowsParams, IsServerSideGroupOpenByDefaultParams, ServerSideGroupLevelParams } from '@ag-grid-community/core'
 declare var FakeServer: any;
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   columnDefs: [
     { field: 'country', enableRowGroup: true, rowGroup: true, hide: true },
     { field: 'sport', enableRowGroup: true, rowGroup: true, hide: true },
@@ -19,8 +19,8 @@ const gridOptions: GridOptions = {
     flex: 1,
     minWidth: 280,
   },
-  getServerSideStoreParams: (params: GetServerSideStoreParamsParams): ServerSideStoreParams => {
-    var res: ServerSideStoreParams = {
+  getServerSideGroupLevelParams: (params: GetServerSideGroupLevelParamsParams): ServerSideGroupLevelParams => {
+    var res: ServerSideGroupLevelParams = {
       storeType: params.level == 0 ? 'partial' : 'full',
     }
     return res

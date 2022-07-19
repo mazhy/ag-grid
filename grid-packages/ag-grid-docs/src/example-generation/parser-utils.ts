@@ -320,7 +320,7 @@ export function getTypes(node: ts.Node) {
     let typesToInclude = []
     if (ts.isIdentifier(node)) {
         const typeName = node.getText();
-        if (!['HTMLElement', 'Function', 'Partial'].includes(typeName)) {
+        if (!['HTMLElement', 'Function', 'Partial', 'TData'].includes(typeName)) {
             typesToInclude.push(typeName);
         }
     }
@@ -547,6 +547,10 @@ export function convertImportPath(modulePackage: string, convertToPackage: boole
         if (modulePackage.includes("@ag-grid-community/core/dist")) {
             return modulePackage.replace('@ag-grid-community/core/dist', 'ag-grid-community/dist');
         }
+        if (modulePackage.includes("@ag-grid-community/styles")) {
+            return modulePackage.replace('@ag-grid-community/styles', 'ag-grid-community/styles');
+        }
+
         if (modulePackage.includes("@ag-grid-community")) {
             return `'ag-grid-community'`
         }
@@ -643,4 +647,25 @@ export function getModuleRegistration({ gridSettings, enterprise, exampleName })
     moduleRegistration.push(`\n// Register the required feature modules with the Grid`);
     moduleRegistration.push(`ModuleRegistry.registerModules(${gridSuppliedModules})`);
     return moduleRegistration;
+}
+
+export function handleRowGenericInterface(fileTxt: string, tData: string): string {
+    if (tData) {
+        fileTxt = fileTxt
+        // Until we support this cleanly.
+            //.replace(/<TData>/g, `<${tData}>`)
+            .replace(/<TData>/g, '')
+            .replace(/TData\[\]/g, `${tData}[]`);
+    } else {
+        fileTxt = fileTxt.replace(/<TData>/g, '').replace(/TData\[\]/g, 'any[]');
+    }
+    return fileTxt;
+}
+
+export function addGenericInterfaceImport(imports: string[], tData: string, bindings) {
+    if (tData &&
+        !bindings.interfaces.some(i => i.includes(tData)) &&
+        !imports.some(i => i.includes(tData))) {
+        imports.push(`import { ${tData} } from './interfaces'`)
+    }
 }

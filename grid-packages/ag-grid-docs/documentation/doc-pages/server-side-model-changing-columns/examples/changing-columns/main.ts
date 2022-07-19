@@ -29,7 +29,7 @@ const columnDefs: ColDef[] = [
   colDefBronze,
 ]
 
-const gridOptions: GridOptions = {
+const gridOptions: GridOptions<IOlympicData> = {
   columnDefs: columnDefs,
   defaultColDef: {
     flex: 1,
@@ -42,7 +42,7 @@ const gridOptions: GridOptions = {
   },
   // use the server-side row model
   rowModelType: 'serverSide',
-  serverSideStoreType: 'partial',
+  serverSideInfiniteScroll: true,
 
   onGridReady: (params) => {
     (document.getElementById('athlete') as HTMLInputElement).checked = true;

@@ -16,7 +16,7 @@ const gridOptions: GridOptions = {
 
   // use the server-side row model
   rowModelType: 'serverSide',
-  serverSideStoreType: 'partial',
+  serverSideInfiniteScroll: true,
 
   // enable master detail
   masterDetail: true,
@@ -39,7 +39,7 @@ const gridOptions: GridOptions = {
       // supply details records to detail cell renderer (i.e. detail grid)
       params.successCallback(params.data.callRecords)
     },
-  } as IDetailCellRendererParams,
+  } as IDetailCellRendererParams<IAccount, ICallRecord>,
 
   getRowHeight: (params: RowHeightParams) => {
     if (params.node && params.node.detail) {

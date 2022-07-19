@@ -277,6 +277,7 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/angular/charts/stacked-column/ /angular-charts/gallery/stacked-column/
     Redirect 301 /documentation/angular/charts/time-axis-with-irregular-intervals/ /angular-charts/gallery/time-axis-with-irregular-intervals/
     Redirect 301 /documentation/angular/charts/xy-histogram-with-mean-aggregation/ /angular-charts/gallery/xy-histogram-with-mean-aggregation/
+    redirectMatch ^/angular-charts/$ /angular-charts/overview/
     Redirect 301 /documentation/angular/client-side-model/ /angular-data-grid/client-side-model/
     Redirect 301 /documentation/angular/clipboard/ /angular-data-grid/clipboard/
     Redirect 301 /documentation/angular/column-api/ /angular-data-grid/column-api/
@@ -411,7 +412,6 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/angular/security/ /angular-data-grid/security/
     Redirect 301 /documentation/angular/selection-overview/ /angular-data-grid/selection-overview/
     Redirect 301 /documentation/angular/server-side-model-changing-columns/ /angular-data-grid/server-side-model-changing-columns/
-    Redirect 301 /documentation/angular/server-side-model-configuration/ /angular-data-grid/server-side-model-configuration/
     Redirect 301 /documentation/angular/server-side-model-datasource/ /angular-data-grid/server-side-model-datasource/
     Redirect 301 /documentation/angular/server-side-model-filtering/ /angular-data-grid/server-side-model-filtering/
     Redirect 301 /documentation/angular/server-side-model-grouping/ /angular-data-grid/server-side-model-grouping/
@@ -422,7 +422,6 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/angular/server-side-model-refresh/ /angular-data-grid/server-side-model-refresh/
     Redirect 301 /documentation/angular/server-side-model-retry/ /angular-data-grid/server-side-model-retry/
     Redirect 301 /documentation/angular/server-side-model-row-height/ /angular-data-grid/server-side-model-row-height/
-    Redirect 301 /documentation/angular/server-side-model-row-stores/ /angular-data-grid/server-side-model-row-stores/
     Redirect 301 /documentation/angular/server-side-model-selection/ /angular-data-grid/server-side-model-selection/
     Redirect 301 /documentation/angular/server-side-model-sorting/ /angular-data-grid/server-side-model-sorting/
     Redirect 301 /documentation/angular/server-side-model-transactions/ /angular-data-grid/server-side-model-transactions/
@@ -439,9 +438,8 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/angular/systemjs/ /angular-data-grid/
     Redirect 301 /angular-data-grid/systemjs/ /angular-data-grid/
     Redirect 301 /documentation/angular/testing/ /angular-data-grid/testing/
-    Redirect 301 /documentation/angular/themes-customising/ /angular-data-grid/themes-customising/
-    Redirect 301 /documentation/angular/themes-provided/ /angular-data-grid/themes-provided/
-    Redirect 301 /documentation/angular/themes-v23-migration/ /angular-data-grid/themes-v23-migration/
+    Redirect 301 /documentation/angular/themes-customising/ /angular-data-grid/themes/
+    Redirect 301 /documentation/angular/themes-provided/ /angular-data-grid/themes/
     Redirect 301 /documentation/angular/themes/ /angular-data-grid/themes/
     Redirect 301 /documentation/angular/tool-panel-columns/ /angular-data-grid/tool-panel-columns/
     Redirect 301 /documentation/angular/tool-panel-filters/ /angular-data-grid/tool-panel-filters/
@@ -667,7 +665,6 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/javascript/selection/ /javascript-data-grid/row-selection/
     Redirect 301 /documentation/javascript/selection/ /javascript-data-grid/row-selection/
     Redirect 301 /documentation/javascript/server-side-model-changing-columns/ /javascript-data-grid/server-side-model-changing-columns/
-    Redirect 301 /documentation/javascript/server-side-model-configuration/ /javascript-data-grid/server-side-model-configuration/
     Redirect 301 /documentation/javascript/server-side-model-datasource/ /javascript-data-grid/server-side-model-datasource/
     Redirect 301 /documentation/javascript/server-side-model-filtering/ /javascript-data-grid/server-side-model-filtering/
     Redirect 301 /documentation/javascript/server-side-model-grouping/ /javascript-data-grid/server-side-model-grouping/
@@ -678,7 +675,6 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/javascript/server-side-model-refresh/ /javascript-data-grid/server-side-model-refresh/
     Redirect 301 /documentation/javascript/server-side-model-retry/ /javascript-data-grid/server-side-model-retry/
     Redirect 301 /documentation/javascript/server-side-model-row-height/ /javascript-data-grid/server-side-model-row-height/
-    Redirect 301 /documentation/javascript/server-side-model-row-stores/ /javascript-data-grid/server-side-model-row-stores/
     Redirect 301 /documentation/javascript/server-side-model-selection/ /javascript-data-grid/server-side-model-selection/
     Redirect 301 /documentation/javascript/server-side-model-sorting/ /javascript-data-grid/server-side-model-sorting/
     Redirect 301 /documentation/javascript/server-side-model-transactions/ /javascript-data-grid/server-side-model-transactions/
@@ -693,9 +689,8 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/javascript/status-bar/ /javascript-data-grid/status-bar/
     Redirect 301 /documentation/javascript/supported-browsers/ /javascript-data-grid/supported-browsers/
     Redirect 301 /documentation/javascript/testing/ /javascript-data-grid/testing/
-    Redirect 301 /documentation/javascript/themes-customising/ /javascript-data-grid/themes-customising/
-    Redirect 301 /documentation/javascript/themes-provided/ /javascript-data-grid/themes-provided/
-    Redirect 301 /documentation/javascript/themes-v23-migration/ /javascript-data-grid/themes-v23-migration/
+    Redirect 301 /documentation/javascript/themes-customising/ /javascript-data-grid/themes/
+    Redirect 301 /documentation/javascript/themes-provided/ /javascript-data-grid/themes/
     Redirect 301 /documentation/javascript/themes/ /javascript-data-grid/themes/
     Redirect 301 /documentation/javascript/tool-panel-columns/ /javascript-data-grid/tool-panel-columns/
     Redirect 301 /documentation/javascript/tool-panel-filters/ /javascript-data-grid/tool-panel-filters/
@@ -775,6 +770,7 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/react/charts/stacked-column/ /react-charts/gallery/stacked-column/
     Redirect 301 /documentation/react/charts/time-axis-with-irregular-intervals/ /react-charts/gallery/time-axis-with-irregular-intervals/
     Redirect 301 /documentation/react/charts/xy-histogram-with-mean-aggregation/ /react-charts/gallery/xy-histogram-with-mean-aggregation/
+    redirectMatch 301 ^/react-charts/$ /react-charts/overview/
     Redirect 301 /documentation/react/client-side-model/ /react-data-grid/client-side-model/
     Redirect 301 /documentation/react/clipboard/ /react-data-grid/clipboard/
     Redirect 301 /documentation/react/column-api/ /react-data-grid/column-api/
@@ -914,7 +910,6 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/react/security/ /react-data-grid/security/
     Redirect 301 /documentation/react/selection-overview/ /react-data-grid/selection-overview/
     Redirect 301 /documentation/react/server-side-model-changing-columns/ /react-data-grid/server-side-model-changing-columns/
-    Redirect 301 /documentation/react/server-side-model-configuration/ /react-data-grid/server-side-model-configuration/
     Redirect 301 /documentation/react/server-side-model-datasource/ /react-data-grid/server-side-model-datasource/
     Redirect 301 /documentation/react/server-side-model-filtering/ /react-data-grid/server-side-model-filtering/
     Redirect 301 /documentation/react/server-side-model-grouping/ /react-data-grid/server-side-model-grouping/
@@ -925,7 +920,6 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/react/server-side-model-refresh/ /react-data-grid/server-side-model-refresh/
     Redirect 301 /documentation/react/server-side-model-retry/ /react-data-grid/server-side-model-retry/
     Redirect 301 /documentation/react/server-side-model-row-height/ /react-data-grid/server-side-model-row-height/
-    Redirect 301 /documentation/react/server-side-model-row-stores/ /react-data-grid/server-side-model-row-stores/
     Redirect 301 /documentation/react/server-side-model-selection/ /react-data-grid/server-side-model-selection/
     Redirect 301 /documentation/react/server-side-model-sorting/ /react-data-grid/server-side-model-sorting/
     Redirect 301 /documentation/react/server-side-model-transactions/ /react-data-grid/server-side-model-transactions/
@@ -940,9 +934,8 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/react/status-bar/ /react-data-grid/status-bar/
     Redirect 301 /documentation/react/supported-browsers/ /react-data-grid/supported-browsers/
     Redirect 301 /documentation/react/testing/ /react-data-grid/testing/
-    Redirect 301 /documentation/react/themes-customising/ /react-data-grid/themes-customising/
-    Redirect 301 /documentation/react/themes-provided/ /react-data-grid/themes-provided/
-    Redirect 301 /documentation/react/themes-v23-migration/ /react-data-grid/themes-v23-migration/
+    Redirect 301 /documentation/react/themes-customising/ /react-data-grid/themes/
+    Redirect 301 /documentation/react/themes-provided/ /react-data-grid/themes/
     Redirect 301 /documentation/react/themes/ /react-data-grid/themes/
     Redirect 301 /documentation/react/tool-panel-columns/ /react-data-grid/tool-panel-columns/
     Redirect 301 /documentation/react/tool-panel-filters/ /react-data-grid/tool-panel-filters/
@@ -1022,6 +1015,7 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/vue/charts/stacked-column/ /vue-charts/gallery/stacked-column/
     Redirect 301 /documentation/vue/charts/time-axis-with-irregular-intervals/ /vue-charts/gallery/time-axis-with-irregular-intervals/
     Redirect 301 /documentation/vue/charts/xy-histogram-with-mean-aggregation/ /vue-charts/gallery/xy-histogram-with-mean-aggregation/
+    redirectMatch ^/vue-charts/$ /vue-charts/overview/
     Redirect 301 /documentation/vue/client-side-model/ /vue-data-grid/client-side-model/
     Redirect 301 /documentation/vue/clipboard/ /vue-data-grid/clipboard/
     Redirect 301 /documentation/vue/column-api/ /vue-data-grid/column-api/
@@ -1157,7 +1151,6 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/vue/security/ /vue-data-grid/security/
     Redirect 301 /documentation/vue/selection-overview/ /vue-data-grid/selection-overview/
     Redirect 301 /documentation/vue/server-side-model-changing-columns/ /vue-data-grid/server-side-model-changing-columns/
-    Redirect 301 /documentation/vue/server-side-model-configuration/ /vue-data-grid/server-side-model-configuration/
     Redirect 301 /documentation/vue/server-side-model-datasource/ /vue-data-grid/server-side-model-datasource/
     Redirect 301 /documentation/vue/server-side-model-filtering/ /vue-data-grid/server-side-model-filtering/
     Redirect 301 /documentation/vue/server-side-model-grouping/ /vue-data-grid/server-side-model-grouping/
@@ -1168,7 +1161,6 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/vue/server-side-model-refresh/ /vue-data-grid/server-side-model-refresh/
     Redirect 301 /documentation/vue/server-side-model-retry/ /vue-data-grid/server-side-model-retry/
     Redirect 301 /documentation/vue/server-side-model-row-height/ /vue-data-grid/server-side-model-row-height/
-    Redirect 301 /documentation/vue/server-side-model-row-stores/ /vue-data-grid/server-side-model-row-stores/
     Redirect 301 /documentation/vue/server-side-model-selection/ /vue-data-grid/server-side-model-selection/
     Redirect 301 /documentation/vue/server-side-model-sorting/ /vue-data-grid/server-side-model-sorting/
     Redirect 301 /documentation/vue/server-side-model-transactions/ /vue-data-grid/server-side-model-transactions/
@@ -1183,9 +1175,8 @@ AddType text/javascript ts jsx
     Redirect 301 /documentation/vue/status-bar/ /vue-data-grid/status-bar/
     Redirect 301 /documentation/vue/supported-browsers/ /vue-data-grid/supported-browsers/
     Redirect 301 /documentation/vue/testing/ /vue-data-grid/testing/
-    Redirect 301 /documentation/vue/themes-customising/ /vue-data-grid/themes-customising/
-    Redirect 301 /documentation/vue/themes-provided/ /vue-data-grid/themes-provided/
-    Redirect 301 /documentation/vue/themes-v23-migration/ /vue-data-grid/themes-v23-migration/
+    Redirect 301 /documentation/vue/themes-customising/ /vue-data-grid/themes/
+    Redirect 301 /documentation/vue/themes-provided/ /vue-data-grid/themes/
     Redirect 301 /documentation/vue/themes/ /vue-data-grid/themes/
     Redirect 301 /documentation/vue/tool-panel-columns/ /vue-data-grid/tool-panel-columns/
     Redirect 301 /documentation/vue/tool-panel-filters/ /vue-data-grid/tool-panel-filters/
@@ -1397,7 +1388,6 @@ AddType text/javascript ts jsx
     Redirect 301 /javascript-grid-selection-overview/ /javascript-data-grid/selection-overview/
     Redirect 301 /javascript-grid-selection/ /javascript-data-grid/row-selection/
     Redirect 301 /javascript-grid-server-side-model-changing-columns/ /javascript-data-grid/server-side-model-changing-columns/
-    Redirect 301 /javascript-grid-server-side-model-configuration/ /javascript-data-grid/server-side-model-configuration/
     Redirect 301 /javascript-grid-server-side-model-crud/ /javascript-data-grid/server-side-model-updating/
     Redirect 301 /javascript-grid-server-side-model-datasource/ /javascript-data-grid/server-side-model-datasource/
     Redirect 301 /javascript-grid-server-side-model-filtering/ /javascript-data-grid/server-side-model-filtering/
@@ -1422,9 +1412,8 @@ AddType text/javascript ts jsx
     Redirect 301 /javascript-grid-testing-react/ /react-data-grid/testing/
     Redirect 301 /javascript-grid-testing-vue/ /vue-data-grid/testing/
     Redirect 301 /javascript-grid-testing/ /javascript-data-grid/testing/
-    Redirect 301 /javascript-grid-themes-customising/ /javascript-data-grid/themes-customising/
-    Redirect 301 /javascript-grid-themes-provided/ /javascript-data-grid/themes-provided/
-    Redirect 301 /javascript-grid-themes-v23-migration/ /javascript-data-grid/themes-v23-migration/
+    Redirect 301 /javascript-grid-themes-customising/ /javascript-data-grid/themes/
+    Redirect 301 /javascript-grid-themes-provided/ /javascript-data-grid/themes/
     Redirect 301 /javascript-grid-themes/ /javascript-data-grid/themes/
     Redirect 301 /javascript-grid-tool-panel-columns/ /javascript-data-grid/tool-panel-columns/
     Redirect 301 /javascript-grid-tool-panel-component/ /javascript-data-grid/component-tool-panel/
@@ -1597,7 +1586,6 @@ AddType text/javascript ts jsx
     Redirect 301 /javascript-grid/selection-overview/ /javascript-data-grid/selection-overview/
     Redirect 301 /javascript-grid/server-side-model/ /javascript-data-grid/server-side-model/
     Redirect 301 /javascript-grid/server-side-model-changing-columns/ /javascript-data-grid/server-side-model-changing-columns/
-    Redirect 301 /javascript-grid/server-side-model-configuration/ /javascript-data-grid/server-side-model-configuration/
     Redirect 301 /javascript-grid/server-side-model-datasource/ /javascript-data-grid/server-side-model-datasource/
     Redirect 301 /javascript-grid/server-side-model-filtering/ /javascript-data-grid/server-side-model-filtering/
     Redirect 301 /javascript-grid/server-side-model-grouping/ /javascript-data-grid/server-side-model-grouping/
@@ -1608,7 +1596,6 @@ AddType text/javascript ts jsx
     Redirect 301 /javascript-grid/server-side-model-refresh/ /javascript-data-grid/server-side-model-refresh/
     Redirect 301 /javascript-grid/server-side-model-retry/ /javascript-data-grid/server-side-model-retry/
     Redirect 301 /javascript-grid/server-side-model-row-height/ /javascript-data-grid/server-side-model-row-height/
-    Redirect 301 /javascript-grid/server-side-model-row-stores/ /javascript-data-grid/server-side-model-row-stores/
     Redirect 301 /javascript-grid/server-side-model-selection/ /javascript-data-grid/server-side-model-selection/
     Redirect 301 /javascript-grid/server-side-model-sorting/ /javascript-data-grid/server-side-model-sorting/
     Redirect 301 /javascript-grid/server-side-model-transactions/ /javascript-data-grid/server-side-model-transactions/
@@ -1623,9 +1610,8 @@ AddType text/javascript ts jsx
     Redirect 301 /javascript-grid/supported-browsers/ /javascript-data-grid/supported-browsers/
     Redirect 301 /javascript-grid/testing/ /javascript-data-grid/testing/
     Redirect 301 /javascript-grid/themes/ /javascript-data-grid/themes/
-    Redirect 301 /javascript-grid/themes-customising/ /javascript-data-grid/themes-customising/
-    Redirect 301 /javascript-grid/themes-provided/ /javascript-data-grid/themes-provided/
-    Redirect 301 /javascript-grid/themes-v23-migration/ /javascript-data-grid/themes-v23-migration/
+    Redirect 301 /javascript-grid/themes-customising/ /javascript-data-grid/themes/
+    Redirect 301 /javascript-grid/themes-provided/ /javascript-data-grid/themes/
     Redirect 301 /javascript-grid/tool-panel/ /javascript-data-grid/tool-panel/
     Redirect 301 /javascript-grid/tool-panel-columns/ /javascript-data-grid/tool-panel-columns/
     Redirect 301 /javascript-grid/tool-panel-filters/ /javascript-data-grid/tool-panel-filters/
@@ -1795,7 +1781,6 @@ AddType text/javascript ts jsx
     Redirect 301 /angular-grid/selection-overview/ /angular-data-grid/selection-overview/
     Redirect 301 /angular-grid/server-side-model/ /angular-data-grid/server-side-model/
     Redirect 301 /angular-grid/server-side-model-changing-columns/ /angular-data-grid/server-side-model-changing-columns/
-    Redirect 301 /angular-grid/server-side-model-configuration/ /angular-data-grid/server-side-model-configuration/
     Redirect 301 /angular-grid/server-side-model-datasource/ /angular-data-grid/server-side-model-datasource/
     Redirect 301 /angular-grid/server-side-model-filtering/ /angular-data-grid/server-side-model-filtering/
     Redirect 301 /angular-grid/server-side-model-grouping/ /angular-data-grid/server-side-model-grouping/
@@ -1806,7 +1791,6 @@ AddType text/javascript ts jsx
     Redirect 301 /angular-grid/server-side-model-refresh/ /angular-data-grid/server-side-model-refresh/
     Redirect 301 /angular-grid/server-side-model-retry/ /angular-data-grid/server-side-model-retry/
     Redirect 301 /angular-grid/server-side-model-row-height/ /angular-data-grid/server-side-model-row-height/
-    Redirect 301 /angular-grid/server-side-model-row-stores/ /angular-data-grid/server-side-model-row-stores/
     Redirect 301 /angular-grid/server-side-model-selection/ /angular-data-grid/server-side-model-selection/
     Redirect 301 /angular-grid/server-side-model-sorting/ /angular-data-grid/server-side-model-sorting/
     Redirect 301 /angular-grid/server-side-model-transactions/ /angular-data-grid/server-side-model-transactions/
@@ -1821,9 +1805,8 @@ AddType text/javascript ts jsx
     Redirect 301 /angular-grid/supported-browsers/ /angular-data-grid/supported-browsers/
     Redirect 301 /angular-grid/testing/ /angular-data-grid/testing/
     Redirect 301 /angular-grid/themes/ /angular-data-grid/themes/
-    Redirect 301 /angular-grid/themes-customising/ /angular-data-grid/themes-customising/
-    Redirect 301 /angular-grid/themes-provided/ /angular-data-grid/themes-provided/
-    Redirect 301 /angular-grid/themes-v23-migration/ /angular-data-grid/themes-v23-migration/
+    Redirect 301 /angular-grid/themes-customising/ /angular-data-grid/themes/
+    Redirect 301 /angular-grid/themes-provided/ /angular-data-grid/themes/
     Redirect 301 /angular-grid/tool-panel/ /angular-data-grid/tool-panel/
     Redirect 301 /angular-grid/tool-panel-columns/ /angular-data-grid/tool-panel-columns/
     Redirect 301 /angular-grid/tool-panel-filters/ /angular-data-grid/tool-panel-filters/
@@ -1999,7 +1982,6 @@ AddType text/javascript ts jsx
     Redirect 301 /react-grid/selection-overview/ /react-data-grid/selection-overview/
     Redirect 301 /react-grid/server-side-model/ /react-data-grid/server-side-model/
     Redirect 301 /react-grid/server-side-model-changing-columns/ /react-data-grid/server-side-model-changing-columns/
-    Redirect 301 /react-grid/server-side-model-configuration/ /react-data-grid/server-side-model-configuration/
     Redirect 301 /react-grid/server-side-model-datasource/ /react-data-grid/server-side-model-datasource/
     Redirect 301 /react-grid/server-side-model-filtering/ /react-data-grid/server-side-model-filtering/
     Redirect 301 /react-grid/server-side-model-grouping/ /react-data-grid/server-side-model-grouping/
@@ -2010,7 +1992,6 @@ AddType text/javascript ts jsx
     Redirect 301 /react-grid/server-side-model-refresh/ /react-data-grid/server-side-model-refresh/
     Redirect 301 /react-grid/server-side-model-retry/ /react-data-grid/server-side-model-retry/
     Redirect 301 /react-grid/server-side-model-row-height/ /react-data-grid/server-side-model-row-height/
-    Redirect 301 /react-grid/server-side-model-row-stores/ /react-data-grid/server-side-model-row-stores/
     Redirect 301 /react-grid/server-side-model-selection/ /react-data-grid/server-side-model-selection/
     Redirect 301 /react-grid/server-side-model-sorting/ /react-data-grid/server-side-model-sorting/
     Redirect 301 /react-grid/server-side-model-transactions/ /react-data-grid/server-side-model-transactions/
@@ -2025,9 +2006,8 @@ AddType text/javascript ts jsx
     Redirect 301 /react-grid/supported-browsers/ /react-data-grid/supported-browsers/
     Redirect 301 /react-grid/testing/ /react-data-grid/testing/
     Redirect 301 /react-grid/themes/ /react-data-grid/themes/
-    Redirect 301 /react-grid/themes-customising/ /react-data-grid/themes-customising/
-    Redirect 301 /react-grid/themes-provided/ /react-data-grid/themes-provided/
-    Redirect 301 /react-grid/themes-v23-migration/ /react-data-grid/themes-v23-migration/
+    Redirect 301 /react-grid/themes-customising/ /react-data-grid/themes/
+    Redirect 301 /react-grid/themes-provided/ /react-data-grid/themes/
     Redirect 301 /react-grid/tool-panel/ /react-data-grid/tool-panel/
     Redirect 301 /react-grid/tool-panel-columns/ /react-data-grid/tool-panel-columns/
     Redirect 301 /react-grid/tool-panel-filters/ /react-data-grid/tool-panel-filters/
@@ -2197,7 +2177,6 @@ AddType text/javascript ts jsx
     Redirect 301 /vue-grid/selection-overview/ /vue-data-grid/selection-overview/
     Redirect 301 /vue-grid/server-side-model/ /vue-data-grid/server-side-model/
     Redirect 301 /vue-grid/server-side-model-changing-columns/ /vue-data-grid/server-side-model-changing-columns/
-    Redirect 301 /vue-grid/server-side-model-configuration/ /vue-data-grid/server-side-model-configuration/
     Redirect 301 /vue-grid/server-side-model-datasource/ /vue-data-grid/server-side-model-datasource/
     Redirect 301 /vue-grid/server-side-model-filtering/ /vue-data-grid/server-side-model-filtering/
     Redirect 301 /vue-grid/server-side-model-grouping/ /vue-data-grid/server-side-model-grouping/
@@ -2208,7 +2187,6 @@ AddType text/javascript ts jsx
     Redirect 301 /vue-grid/server-side-model-refresh/ /vue-data-grid/server-side-model-refresh/
     Redirect 301 /vue-grid/server-side-model-retry/ /vue-data-grid/server-side-model-retry/
     Redirect 301 /vue-grid/server-side-model-row-height/ /vue-data-grid/server-side-model-row-height/
-    Redirect 301 /vue-grid/server-side-model-row-stores/ /vue-data-grid/server-side-model-row-stores/
     Redirect 301 /vue-grid/server-side-model-selection/ /vue-data-grid/server-side-model-selection/
     Redirect 301 /vue-grid/server-side-model-sorting/ /vue-data-grid/server-side-model-sorting/
     Redirect 301 /vue-grid/server-side-model-transactions/ /vue-data-grid/server-side-model-transactions/
@@ -2223,9 +2201,8 @@ AddType text/javascript ts jsx
     Redirect 301 /vue-grid/supported-browsers/ /vue-data-grid/supported-browsers/
     Redirect 301 /vue-grid/testing/ /vue-data-grid/testing/
     Redirect 301 /vue-grid/themes/ /vue-data-grid/themes/
-    Redirect 301 /vue-grid/themes-customising/ /vue-data-grid/themes-customising/
-    Redirect 301 /vue-grid/themes-provided/ /vue-data-grid/themes-provided/
-    Redirect 301 /vue-grid/themes-v23-migration/ /vue-data-grid/themes-v23-migration/
+    Redirect 301 /vue-grid/themes-customising/ /vue-data-grid/themes/
+    Redirect 301 /vue-grid/themes-provided/ /vue-data-grid/themes/
     Redirect 301 /vue-grid/tool-panel/ /vue-data-grid/tool-panel/
     Redirect 301 /vue-grid/tool-panel-columns/ /vue-data-grid/tool-panel-columns/
     Redirect 301 /vue-grid/tool-panel-filters/ /vue-data-grid/tool-panel-filters/
@@ -2271,6 +2248,16 @@ AddType text/javascript ts jsx
     Redirect 301 /angular-data-grid/integrated-charts-cross-filtering/ /angular-data-grid/integrated-charts-api-cross-filter-chart/
     Redirect 301 /react-data-grid/integrated-charts-cross-filtering/ /react-data-grid/integrated-charts-api-cross-filter-chart/
     Redirect 301 /vue-data-grid/integrated-charts-cross-filtering/ /vue-data-grid/integrated-charts-api-cross-filter-chart/
+
+    Redirect 301 /javascript-data-grid/server-side-model-configuration/ /javascript-data-grid/server-side-model-api-reference/
+    Redirect 301 /angular-data-grid/server-side-model-configuration/ /angular-data-grid/server-side-model-api-reference/
+    Redirect 301 /react-data-grid/server-side-model-configuration/ /react-data-grid/server-side-model-api-reference/
+    Redirect 301 /vue-data-grid/server-side-model-configuration/ /vue-data-grid/server-side-model-api-reference/
+    Redirect 301 /javascript-data-grid/server-side-model-row-stores/ /javascript-data-grid/server-side-model-infinite-scroll/
+    Redirect 301 /angular-data-grid/server-side-model-row-stores/ /angular-data-grid/server-side-model-infinite-scroll/
+    Redirect 301 /react-data-grid/server-side-model-row-stores/ /react-data-grid/server-side-model-infinite-scroll/
+    Redirect 301 /vue-data-grid/server-side-model-row-stores/ /vue-data-grid/server-side-model-infinite-scroll/
+
     Redirect 301 /cookies.php /cookies
     Redirect 301 /privacy.php /privacy
     Redirect 301 /about.php /about

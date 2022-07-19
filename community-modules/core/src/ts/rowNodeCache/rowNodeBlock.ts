@@ -12,13 +12,17 @@ export interface LoadSuccessParams {
      */
     rowData: any[];
     /**
-     * The last row, if known, to help Infinite Scroll (i.e Partial Store) and Pagination.
+     * The last row, if known, to help Infinite Scroll.
      */
     rowCount?: number;
     /**
-     * Any extra information for the grid to associate with this load.
+     * @deprecated use groupLevelInfo instead
      */
     storeInfo?: any;
+    /**
+     * Any extra information for the grid to associate with this load.
+     */
+    groupLevelInfo?: any;
 }
 
 export abstract class RowNodeBlock extends BeanStub {
@@ -87,7 +91,7 @@ export abstract class RowNodeBlock extends BeanStub {
     }
 
     protected pageLoaded(version: number, rows: any[], lastRow: number) {
-        this.successCommon(version, {rowData: rows, rowCount: lastRow});
+        this.successCommon(version, { rowData: rows, rowCount: lastRow });
     }
 
     private isRequestMostRecentAndLive(version: number): boolean {

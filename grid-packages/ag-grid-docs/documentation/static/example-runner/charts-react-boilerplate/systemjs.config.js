@@ -26,7 +26,8 @@
         map: assign(
             {
                 // css plugin
-                'css': 'npm:systemjs-plugin-css@0.1.37/css.js',
+                css: boilerplatePath + "css.js",
+                // css: 'npm:systemjs-plugin-css@0.1.37/css.js',
 
                 // babel transpiler
                 'plugin-babel': 'npm:systemjs-plugin-babel@0.0.25/plugin-babel.js',
@@ -38,7 +39,6 @@
                 redux: 'npm:redux@3.6.0',
                 'react-redux': 'npm:react-redux@5.0.6',
                 'prop-types': 'npm:prop-types@15.8.1',
-                lodash: 'npm:lodash@4.17.15',
                 app: 'app'
             },
             systemJsMap

@@ -1,13 +1,5 @@
 import { _, AgChartThemeOverrides, ChartType, SeriesChartType } from "@ag-grid-community/core";
-import {
-    AgChartTheme,
-    AgChartThemePalette,
-    CategoryAxis,
-    Chart,
-    ChartTheme,
-    getChartTheme,
-    themes
-} from "ag-charts-community";
+import { AgChartTheme, AgChartThemePalette, Chart, ChartTheme, getIntegratedChartTheme, themes } from "ag-charts-community";
 import { deepMerge } from "../utils/object";
 import { CrossFilteringContext } from "../../chartService";
 import { ChartSeriesType, getSeriesType } from "../utils/seriesTypeMapper";
@@ -47,6 +39,8 @@ export interface UpdateChartParams {
     seriesChartTypes: SeriesChartType[];
 }
 
+type CommonChartPropertyKeys = 'padding' | 'legend' | 'background' | 'title' | 'subtitle' | 'tooltip' | 'navigator';
+
 export abstract class ChartProxy {
     protected readonly chartType: ChartType;
     protected readonly standaloneChartType: ChartSeriesType;
@@ -68,7 +62,7 @@ export abstract class ChartProxy {
             this.chartOptions = this.chartProxyParams.chartOptionsToRestore;
             this.chartPalette = this.chartProxyParams.chartPaletteToRestore;
             const themeOverrides = { overrides:  this.chartOptions, palette: this.chartPalette } as any;
-            this.chartTheme = getChartTheme({baseTheme: this.getSelectedTheme(), ...themeOverrides});
+            this.chartTheme = getIntegratedChartTheme({baseTheme: this.getSelectedTheme(), ...themeOverrides});
             return;
         }
 
@@ -77,6 +71,7 @@ export abstract class ChartProxy {
         this.chartPalette = this.chartTheme.palette;
     }
 
+    public abstract crossFilteringReset(): void;
     protected abstract createChart(options?: AgChartThemeOverrides): Chart;
 
     public abstract update(params: UpdateChartParams): void;
@@ -110,9 +105,9 @@ export abstract class ChartProxy {
                 overrides: ChartProxy.mergeThemeOverrides(gridOptionsThemeOverrides, apiThemeOverrides)
             };
             const getCustomTheme = () => deepMerge(this.lookupCustomChartTheme(themeName), themeOverrides);
-            return getChartTheme(stockTheme ? {baseTheme: themeName, ...themeOverrides} : getCustomTheme());
+            return getIntegratedChartTheme(stockTheme ? {baseTheme: themeName, ...themeOverrides} : getCustomTheme());
         }
-        return getChartTheme(stockTheme ? themeName : this.lookupCustomChartTheme(themeName));
+        return getIntegratedChartTheme(stockTheme ? themeName : this.lookupCustomChartTheme(themeName));
     }
 
     public isStockTheme(themeName: string): boolean {
@@ -166,24 +161,37 @@ export abstract class ChartProxy {
         return this.chartPalette;
     }
 
-    protected transformData(data: any[], categoryKey: string): any[] {
-        const usingGroupedCategory =
-            this.chartProxyParams.grouping || this.chart.axes.filter(a => a instanceof CategoryAxis).length < 1;
+    protected transformData(data: any[], categoryKey: string, categoryAxis?: boolean): any[] {
+        if (categoryAxis) {
+            // replace the values for the selected category with a complex object to allow for duplicated categories
+            return data.map((d, index) => {
+                const value = d[categoryKey];
+                const valueString = value && value.toString ? value.toString() : '';
+                const datum = { ...d };
 
-        if (usingGroupedCategory) {
-            return data;
+                datum[categoryKey] = { id: index, value, toString: () => valueString };
+
+                return datum;
+            });
         }
 
-        // replace the values for the selected category with a complex object to allow for duplicated categories
-        return data.map((d, index) => {
-            const value = d[categoryKey];
-            const valueString = value && value.toString ? value.toString() : '';
-            const datum = { ...d };
+        return data;
+    }
 
-            datum[categoryKey] = { id: index, value, toString: () => valueString };
+    protected getCommonChartOptions() {
+        const getChartOption = (propertyKey: CommonChartPropertyKeys) => {
+            return _.get(this.chartOptions, `${this.standaloneChartType}.${propertyKey}`, undefined);
+        }
 
-            return datum;
-        });
+        return {
+            padding: getChartOption('padding'),
+            background: getChartOption('background'),
+            title: getChartOption('title'),
+            subtitle: getChartOption('subtitle'),
+            tooltip: getChartOption('tooltip'),
+            legend: getChartOption('legend'),
+            navigator: getChartOption('navigator'),
+        };
     }
 
     private convertConfigToOverrides(config: any) {

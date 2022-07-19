@@ -27,7 +27,7 @@ export class RowNodeSorter {
     @Autowired('columnModel') private columnModel: ColumnModel;
 
     public doFullSort(rowNodes: RowNode[], sortOptions: SortOption[]): RowNode[] {
-
+        
         const mapper = (rowNode: RowNode, pos: number) => ({ currentPos: pos, rowNode: rowNode });
         const sortedRowNodes: SortedRowNode[] = rowNodes.map(mapper);
 
@@ -43,7 +43,7 @@ export class RowNodeSorter {
         // Iterate columns, return the first that doesn't match
         for (let i = 0, len = sortOptions.length; i < len; i++) {
             const sortOption = sortOptions[i];
-            const isInverted = sortOption.sort === Constants.SORT_DESC;
+            const isDescending = sortOption.sort === Constants.SORT_DESC;
 
             const valueA: any = this.getValue(nodeA, sortOption.column);
             const valueB: any = this.getValue(nodeB, sortOption.column);
@@ -52,7 +52,7 @@ export class RowNodeSorter {
             const providedComparator = this.getComparator(sortOption, nodeA);
             if (providedComparator) {
                 //if comparator provided, use it
-                comparatorResult = providedComparator(valueA, valueB, nodeA, nodeB, isInverted);
+                comparatorResult = providedComparator(valueA, valueB, nodeA, nodeB, isDescending);
             } else {
                 //otherwise do our own comparison
                 comparatorResult = _.defaultComparator(valueA, valueB, this.gridOptionsWrapper.isAccentedSort());
@@ -71,7 +71,7 @@ export class RowNodeSorter {
     }
 
     private getComparator(sortOption: SortOption, rowNode: RowNode):
-        ((valueA: any, valueB: any, nodeA: RowNode, nodeB: RowNode, isInverted: boolean) => number) | undefined {
+        ((valueA: any, valueB: any, nodeA: RowNode, nodeB: RowNode, isDescending: boolean) => number) | undefined {
 
         const column = sortOption.column;
 
@@ -79,11 +79,6 @@ export class RowNodeSorter {
         const comparatorOnCol = column.getColDef().comparator;
         if (comparatorOnCol != null) {
             return comparatorOnCol;
-        }
-
-        // if no comparator on col, see if we are showing a group, and if we are, get comparator from row group col
-        if (rowNode.rowGroupColumn) {
-            return rowNode.rowGroupColumn.getColDef().comparator;
         }
 
         if (!column.getColDef().showRowGroup) { return; }
@@ -98,7 +93,25 @@ export class RowNodeSorter {
         return primaryColumn.getColDef().comparator;
     }
 
-    private getValue(nodeA: RowNode, column: Column): string {
-        return this.valueService.getValue(column, nodeA, false, false);
+    private getValue(node: RowNode, column: Column): any {
+        const primaryColumnsSortGroups = this.gridOptionsWrapper.isColumnsSortingCoupledToGroup();
+        if (!primaryColumnsSortGroups) {
+            return this.valueService.getValue(column, node, false, false);
+        }
+
+        const isNodeGroupedAtLevel = node.rowGroupColumn === column;
+        if (isNodeGroupedAtLevel) {
+            const displayCol = this.columnModel.getGroupDisplayColumnForGroup(column.getId());
+            if (!displayCol) {
+                return undefined;
+            }
+            return node.groupData?.[displayCol.getId()];
+        }
+
+        if (node.group && column.getColDef().showRowGroup) {
+            return undefined;
+        }
+
+        return this.valueService.getValue(column, node, false, false);
     }
 }

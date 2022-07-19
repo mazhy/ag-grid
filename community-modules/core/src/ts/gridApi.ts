@@ -22,12 +22,13 @@ import {
     IsRowSelectable,
     IsServerSideGroup,
     RowClassParams,
-    ServerSideStoreParams,
+    ServerSideGroupLevelParams,
 } from "./entities/gridOptions";
 import {
     GetGroupRowAggParams,
-    GetServerSideStoreParamsParams,
+    GetServerSideGroupLevelParamsParams,
     InitialGroupOrderComparatorParams,
+    IsFullWidthRowParams,
     IsServerSideGroupOpenByDefaultParams,
     NavigateToNextCellParams,
     NavigateToNextHeaderParams,
@@ -77,9 +78,9 @@ import { IServerSideDatasource } from "./interfaces/iServerSideDatasource";
 import {
     IServerSideRowModel,
     IServerSideTransactionManager,
-    RefreshStoreParams
+    RefreshServerSideParams
 } from "./interfaces/iServerSideRowModel";
-import { ServerSideStoreState } from "./interfaces/IServerSideStore";
+import { ServerSideGroupLevelState } from "./interfaces/IServerSideStore";
 import { ISideBar } from "./interfaces/iSideBar";
 import { IStatusBarService } from "./interfaces/iStatusBarService";
 import { IStatusPanel } from "./interfaces/iStatusPanel";
@@ -100,7 +101,9 @@ import { RowNodeBlockLoader } from "./rowNodeCache/rowNodeBlockLoader";
 import { SelectionService } from "./selectionService";
 import { SortController } from "./sortController";
 import { UndoRedoService } from "./undoRedo/undoRedoService";
+import { _ } from "./utils";
 import { doOnce } from "./utils/function";
+import { message } from "./utils/general";
 import { exists, missing } from "./utils/generic";
 import { iterateObject, removeAllReferences } from "./utils/object";
 import { camelCaseToHumanText } from "./utils/string";
@@ -120,32 +123,32 @@ export interface StartEditingCellParams {
     charPress?: string;
 }
 
-export interface GetCellsParams {
+export interface GetCellsParams<TData = any> {
     /** Optional list of row nodes to restrict operation to */
-    rowNodes?: RowNode[];
+    rowNodes?: RowNode<TData>[];
     /** Optional list of columns to restrict operation to */
     columns?: (string | Column)[];
 }
 
-export interface RefreshCellsParams extends GetCellsParams {
+export interface RefreshCellsParams<TData = any> extends GetCellsParams<TData> {
     /** Skip change detection, refresh everything. */
     force?: boolean;
     /** Skip cell flashing, if cell flashing is enabled. */
     suppressFlash?: boolean;
 }
 
-export interface FlashCellsParams extends GetCellsParams {
+export interface FlashCellsParams<TData = any> extends GetCellsParams<TData> {
     flashDelay?: number;
     fadeDelay?: number;
 }
 
-export interface GetCellRendererInstancesParams extends GetCellsParams { }
+export interface GetCellRendererInstancesParams<TData = any> extends GetCellsParams<TData> { }
 
-export interface GetCellEditorInstancesParams extends GetCellsParams { }
+export interface GetCellEditorInstancesParams<TData = any> extends GetCellsParams<TData> { }
 
-export interface RedrawRowsParams {
+export interface RedrawRowsParams<TData = any> {
     /** Row nodes to redraw */
-    rowNodes?: RowNode[];
+    rowNodes?: RowNode<TData>[];
 }
 
 interface CreateChartParams {
@@ -204,7 +207,7 @@ export function unwrapUserComp<T>(comp: T): T {
 }
 
 @Bean('gridApi')
-export class GridApi {
+export class GridApi<TData = any> {
 
     @Optional('immutableService') private immutableService: IImmutableService;
     @Optional('csvCreator') private csvCreator: ICsvCreator;
@@ -441,7 +444,7 @@ export class GridApi {
     }
 
     /** Set the row data. */
-    public setRowData(rowData: any[]) {
+    public setRowData(rowData: TData[]) {
         // immutable service is part of the CSRM module, if missing, no CSRM
         const missingImmutableService = this.immutableService == null;
 
@@ -581,7 +584,7 @@ export class GridApi {
     }
 
     /** Performs change detection on all cells, refreshing cells where required. */
-    public refreshCells(params: RefreshCellsParams = {}): void {
+    public refreshCells(params: RefreshCellsParams<TData> = {}): void {
         if (Array.isArray(params)) {
             // the old version of refreshCells() took an array of rowNodes for the first argument
             console.warn('since AG Grid v11.1, refreshCells() now takes parameters, please see the documentation.');
@@ -591,12 +594,12 @@ export class GridApi {
     }
 
     /** Flash rows, columns or individual cells. */
-    public flashCells(params: FlashCellsParams = {}): void {
+    public flashCells(params: FlashCellsParams<TData> = {}): void {
         this.rowRenderer.flashCells(params);
     }
 
     /** Remove row(s) from the DOM and recreate them again from scratch. */
-    public redrawRows(params: RedrawRowsParams = {}): void {
+    public redrawRows(params: RedrawRowsParams<TData> = {}): void {
         const rowNodes = params ? params.rowNodes : undefined;
         this.rowRenderer.redrawRows(rowNodes);
     }
@@ -682,7 +685,7 @@ export class GridApi {
             return;
         }
         const animate = !this.gridOptionsWrapper.isSuppressAnimationFrame();
-        const modelParams: RefreshModelParams = {
+        const modelParams: RefreshModelParams<TData> = {
             step: paramsStep,
             keepRenderedRows: true,
             keepEditingRows: true,
@@ -707,7 +710,7 @@ export class GridApi {
      * otherwise the ID is a number (cast as string) auto-generated by the grid when
      * the row data is set.
      */
-    public getRowNode(id: string): RowNode | undefined {
+    public getRowNode(id: string): RowNode<TData> | undefined {
         return this.rowModel.getRowNode(id);
     }
 
@@ -865,7 +868,7 @@ export class GridApi {
         return node.isSelected();
     }
 
-    public getSelectedNodesById(): { [nodeId: number]: RowNode; } | null {
+    public getSelectedNodesById(): { [nodeId: number]: RowNode<TData>; } | null {
         console.error('AG Grid: since version 3.4, getSelectedNodesById no longer exists, use getSelectedNodes() instead');
         return null;
     }
@@ -875,11 +878,11 @@ export class GridApi {
      * Getting the underlying node (rather than the data) is useful when working with tree / aggregated data,
      * as the node can be traversed.
      */
-    public getSelectedNodes(): RowNode[] {
+    public getSelectedNodes(): RowNode<TData>[] {
         return this.selectionService.getSelectedNodes();
     }
     /** Returns a list of selected rows (i.e. row data that you provided). */
-    public getSelectedRows(): any[] {
+    public getSelectedRows(): TData[] {
         return this.selectionService.getSelectedRows();
     }
 
@@ -888,12 +891,12 @@ export class GridApi {
      * If a group has all its children selected, then the group appears in the result, but not the children.
      * Designed for use with `'children'` as the group selection type, where groups don't actually appear in the selection normally.
      */
-    public getBestCostNodeSelection(): RowNode[] | undefined {
+    public getBestCostNodeSelection(): RowNode<TData>[] | undefined {
         return this.selectionService.getBestCostNodeSelection();
     }
 
     /** Retrieve rendered nodes. Due to virtualisation this will contain only the current visible rows and those in the buffer. */
-    public getRenderedNodes(): RowNode[] {
+    public getRenderedNodes(): RowNode<TData>[] {
         return this.rowRenderer.getRenderedNodes();
     }
 
@@ -944,7 +947,7 @@ export class GridApi {
      * If using tree data, goes through all the nodes for the data you provided, including nodes that have children,
      * but excluding groups the grid created where gaps were missing in the hierarchy.
      */
-    public forEachLeafNode(callback: (rowNode: RowNode) => void) {
+    public forEachLeafNode(callback: (rowNode: RowNode<TData>) => void) {
         if (missing(this.clientSideRowModel)) { console.warn('cannot call forEachNode unless using normal row model'); }
         this.clientSideRowModel.forEachLeafNode(callback);
     }
@@ -955,18 +958,18 @@ export class GridApi {
      * This is called for every node, ignoring any filtering or sorting applied within the grid.
      * If using the Infinite Row Model, then this gets called for each page loaded in the page cache.
      */
-    public forEachNode(callback: (rowNode: RowNode, index: number) => void) {
+    public forEachNode(callback: (rowNode: RowNode<TData>, index: number) => void) {
         this.rowModel.forEachNode(callback);
     }
 
     /** Similar to `forEachNode`, except skips any filtered out data. */
-    public forEachNodeAfterFilter(callback: (rowNode: RowNode, index: number) => void) {
+    public forEachNodeAfterFilter(callback: (rowNode: RowNode<TData>, index: number) => void) {
         if (missing(this.clientSideRowModel)) { console.warn('cannot call forEachNodeAfterFilter unless using normal row model'); }
         this.clientSideRowModel.forEachNodeAfterFilter(callback);
     }
 
     /** Similar to `forEachNodeAfterFilter`, except the callbacks are called in the order the rows are displayed in the grid. */
-    public forEachNodeAfterFilterAndSort(callback: (rowNode: RowNode, index: number) => void) {
+    public forEachNodeAfterFilterAndSort(callback: (rowNode: RowNode<TData>, index: number) => void) {
         if (missing(this.clientSideRowModel)) { console.warn('cannot call forEachNodeAfterFilterAndSort unless using normal row model'); }
         this.clientSideRowModel.forEachNodeAfterFilterAndSort(callback);
     }
@@ -1021,7 +1024,7 @@ export class GridApi {
         return unwrapUserComp(comp);
     }
 
-    public getColumnDef(key: string | Column) {
+    public getColumnDef(key: string | Column): ColDef<TData> | null {
         const column = this.columnModel.getPrimaryColumn(key);
         if (column) {
             return column.getColDef();
@@ -1032,7 +1035,7 @@ export class GridApi {
     /**
      * Returns the current column definitions.
     */
-    public getColumnDefs(): (ColDef | ColGroupDef)[] | undefined { return this.columnModel.getColumnDefs(); }
+    public getColumnDefs(): (ColDef<TData> | ColGroupDef<TData>)[] | undefined { return this.columnModel.getColumnDefs(); }
 
     /** Informs the grid that a filter has changed. This is typically called after a filter change through one of the filter APIs. */
     public onFilterChanged() {
@@ -1069,7 +1072,7 @@ export class GridApi {
 
     /** Sets the focus to the specified cell. `rowPinned` can be either 'top', 'bottom' or null (for not pinned). */
     public setFocusedCell(rowIndex: number, colKey: string | Column, rowPinned?: string) {
-        this.focusService.setFocusedCell(rowIndex, colKey, rowPinned, true);
+        this.focusService.setFocusedCell({ rowIndex, column: colKey, rowPinned, forceBrowserFocus: true });
     }
 
     /** Sets the `suppressRowDrag` property. */
@@ -1206,7 +1209,7 @@ export class GridApi {
     public setIsFullWidthCell(isFullWidthCellFunc: (rowNode: RowNode) => boolean): void {
         this.gridOptionsWrapper.setProperty(GridOptionsWrapper.PROP_IS_FULL_WIDTH_CELL, isFullWidthCellFunc);
     }
-    public setIsFullWidthRow(isFullWidthRowFunc: (rowNode: RowNode) => boolean): void {
+    public setIsFullWidthRow(isFullWidthRowFunc: (params: IsFullWidthRowParams) => boolean): void {
         this.gridOptionsWrapper.setProperty(GridOptionsWrapper.PROP_IS_FULL_WIDTH_ROW, isFullWidthRowFunc);
     }
 
@@ -1249,12 +1252,24 @@ export class GridApi {
         this.gridOptionsWrapper.setProperty(GridOptionsWrapper.PROP_PROCESS_CELL_FROM_CLIPBOARD, processCellFromClipboardFunc);
     }
 
+    /** @deprecated use `setProcessPivotResultColDef` instead */
     public setProcessSecondaryColDef(processSecondaryColDefFunc: (colDef: ColDef) => void): void {
-        this.gridOptionsWrapper.setProperty(GridOptionsWrapper.PROP_PROCESS_TO_SECONDARY_COLDEF, processSecondaryColDefFunc);
+        console.warn('AG Grid: since version 28.0.x setProcessSecondaryColDef has been renamed, please use setProcessPivotResultColDef instead');
+        this.setProcessPivotResultColDef(processSecondaryColDefFunc);
     }
 
+    /** @deprecated use `setProcessPivotResultColGroupDef` instead */
     public setProcessSecondaryColGroupDef(processSecondaryColGroupDefFunc: (colDef: ColDef) => void): void {
-        this.gridOptionsWrapper.setProperty(GridOptionsWrapper.PROP_PROCESS_SECONDARY_COL_GROUP_DEF, processSecondaryColGroupDefFunc);
+        console.warn('AG Grid: since version 28.0.x setProcessSecondaryColGroupDef has been renamed, please use setProcessPivotResultColGroupDef instead');
+        this.setProcessPivotResultColGroupDef(processSecondaryColGroupDefFunc);
+    }
+
+    public setProcessPivotResultColDef(processPivotResultColDefFunc: (colDef: ColDef) => void): void {
+        this.gridOptionsWrapper.setProperty(GridOptionsWrapper.PROP_PROCESS_PIVOT_RESULT_COL_DEF, processPivotResultColDefFunc);
+    }
+
+    public setProcessPivotResultColGroupDef(processPivotResultColGroupDefFunc: (colDef: ColDef) => void): void {
+        this.gridOptionsWrapper.setProperty(GridOptionsWrapper.PROP_PROCESS_PIVOT_RESULT_COL_GROUP_DEF, processPivotResultColGroupDefFunc);
     }
 
     public setPostProcessPopup(postProcessPopupFunc: (params: PostProcessPopupParams) => void): void {
@@ -1276,8 +1291,15 @@ export class GridApi {
         this.gridOptionsWrapper.setProperty(GridOptionsWrapper.PROP_PAGINATION_NUMBER_FORMATTER, paginationNumberFormatterFunc);
     }
 
-    public setGetServerSideStoreParams(getServerSideStoreParamsFunc: (params: GetServerSideStoreParamsParams) => ServerSideStoreParams): void {
-        this.gridOptionsWrapper.setProperty(GridOptionsWrapper.PROP_GET_SERVER_SIDE_STORE_PARAMS, getServerSideStoreParamsFunc);
+    /** @deprecated
+     * use setGetServerSideGroupLevelParams instead
+     */
+    public setGetServerSideStoreParams(getServerSideStoreParamsFunc: (params: GetServerSideGroupLevelParamsParams) => ServerSideGroupLevelParams): void {
+        this.setGetServerSideGroupLevelParams(getServerSideStoreParamsFunc);
+    }
+
+    public setGetServerSideGroupLevelParams(getServerSideGroupLevelParamsFunc: (params: GetServerSideGroupLevelParamsParams) => ServerSideGroupLevelParams): void {
+        this.gridOptionsWrapper.setProperty(GridOptionsWrapper.PROP_GET_SERVER_SIDE_GROUP_PARAMS, getServerSideGroupLevelParamsFunc);
     }
 
     public setIsServerSideGroupOpenByDefault(isServerSideGroupOpenByDefaultFunc: (params: IsServerSideGroupOpenByDefaultParams) => boolean): void {
@@ -1666,14 +1688,14 @@ export class GridApi {
     }
 
     /** Returns the list of active cell renderer instances. */
-    public getCellRendererInstances(params: GetCellRendererInstancesParams = {}): ICellRenderer[] {
+    public getCellRendererInstances(params: GetCellRendererInstancesParams<TData> = {}): ICellRenderer[] {
         const res = this.rowRenderer.getCellRendererInstances(params);
         const unwrapped = res.map(unwrapUserComp);
         return unwrapped;
     }
 
     /** Returns the list of active cell editor instances. Optionally provide parameters to restrict to certain columns / row nodes. */
-    public getCellEditorInstances(params: GetCellEditorInstancesParams = {}): ICellEditor[] {
+    public getCellEditorInstances(params: GetCellEditorInstancesParams<TData> = {}): ICellEditor[] {
         const res = this.rowRenderer.getCellEditorInstances(params);
         const unwrapped = res.map(unwrapUserComp);
         return unwrapped;
@@ -1767,13 +1789,13 @@ export class GridApi {
     }
 
     /** Update row data. Pass a transaction object with lists for `add`, `remove` and `update`. */
-    public applyTransaction(rowDataTransaction: RowDataTransaction): RowNodeTransaction | null | undefined {
+    public applyTransaction(rowDataTransaction: RowDataTransaction<TData>): RowNodeTransaction<TData> | null | undefined {
         if (!this.clientSideRowModel) {
             console.error('AG Grid: updateRowData() only works with ClientSideRowModel. Working with InfiniteRowModel was deprecated in v23.1 and removed in v24.1');
             return;
         }
 
-        const res: RowNodeTransaction | null = this.clientSideRowModel.updateRowData(rowDataTransaction);
+        const res: RowNodeTransaction<TData> | null = this.clientSideRowModel.updateRowData(rowDataTransaction);
 
         // refresh all the full width rows
         this.rowRenderer.refreshFullWidthRows(res!.update);
@@ -1792,7 +1814,7 @@ export class GridApi {
     }
 
     /** @deprecated */
-    public updateRowData(rowDataTransaction: RowDataTransaction): RowNodeTransaction | null | undefined {
+    public updateRowData(rowDataTransaction: RowDataTransaction<TData>): RowNodeTransaction<TData> | null | undefined {
         const message = 'AG Grid: as of v23.1, grid API updateRowData(transaction) is now called applyTransaction(transaction). updateRowData is deprecated and will be removed in a future major release.';
         doOnce(() => console.warn(message), 'updateRowData deprecated');
 
@@ -1800,7 +1822,7 @@ export class GridApi {
     }
 
     /** Same as `applyTransaction` except executes asynchronously for efficiency. */
-    public applyTransactionAsync(rowDataTransaction: RowDataTransaction, callback?: (res: RowNodeTransaction) => void): void {
+    public applyTransactionAsync(rowDataTransaction: RowDataTransaction<TData>, callback?: (res: RowNodeTransaction<TData>) => void): void {
         if (!this.clientSideRowModel) {
             console.error('AG Grid: api.applyTransactionAsync() only works with ClientSideRowModel.');
             return;
@@ -1818,34 +1840,39 @@ export class GridApi {
     }
 
     /** @deprecated */
-    public batchUpdateRowData(rowDataTransaction: RowDataTransaction, callback?: (res: RowNodeTransaction) => void): void {
+    public batchUpdateRowData(rowDataTransaction: RowDataTransaction<TData>, callback?: (res: RowNodeTransaction<TData>) => void): void {
         const message = 'AG Grid: as of v23.1, grid API batchUpdateRowData(transaction, callback) is now called applyTransactionAsync(transaction, callback). batchUpdateRowData is deprecated and will be removed in a future major release.';
         doOnce(() => console.warn(message), 'batchUpdateRowData deprecated');
 
         this.applyTransactionAsync(rowDataTransaction, callback);
     }
 
+    /** @deprecated */
     public insertItemsAtIndex(index: number, items: any[], skipRefresh = false): void {
         console.warn('AG Grid: insertItemsAtIndex() is deprecated, use updateRowData(transaction) instead.');
         this.updateRowData({ add: items, addIndex: index, update: null, remove: null });
     }
 
+    /** @deprecated */
     public removeItems(rowNodes: RowNode[], skipRefresh = false): void {
         console.warn('AG Grid: removeItems() is deprecated, use updateRowData(transaction) instead.');
         const dataToRemove: any[] = rowNodes.map(rowNode => rowNode.data);
         this.updateRowData({ add: null, addIndex: null, update: null, remove: dataToRemove });
     }
 
+    /** @deprecated */
     public addItems(items: any[], skipRefresh = false): void {
         console.warn('AG Grid: addItems() is deprecated, use updateRowData(transaction) instead.');
         this.updateRowData({ add: items, addIndex: null, update: null, remove: null });
     }
 
+    /** @deprecated */
     public refreshVirtualPageCache(): void {
         console.warn('AG Grid: refreshVirtualPageCache() is now called refreshInfiniteCache(), please call refreshInfiniteCache() instead');
         this.refreshInfiniteCache();
     }
 
+    /** @deprecated */
     public refreshInfinitePageCache(): void {
         console.warn('AG Grid: refreshInfinitePageCache() is now called refreshInfiniteCache(), please call refreshInfiniteCache() instead');
         this.refreshInfiniteCache();
@@ -1864,11 +1891,13 @@ export class GridApi {
         }
     }
 
+    /** @deprecated */
     public purgeVirtualPageCache(): void {
         console.warn('AG Grid: purgeVirtualPageCache() is now called purgeInfiniteCache(), please call purgeInfiniteCache() instead');
         this.purgeInfinitePageCache();
     }
 
+    /** @deprecated */
     public purgeInfinitePageCache(): void {
         console.warn('AG Grid: purgeInfinitePageCache() is now called purgeInfiniteCache(), please call purgeInfiniteCache() instead');
         this.purgeInfiniteCache();
@@ -1897,8 +1926,8 @@ export class GridApi {
     /** @deprecated */
     public purgeServerSideCache(route: string[] = []): void {
         if (this.serverSideRowModel) {
-            console.warn(`AG Grid: since v25.0, api.purgeServerSideCache is deprecated. Please use api.refreshServerSideStore({purge: true}) instead.`);
-            this.refreshServerSideStore({
+            console.warn(`AG Grid: since v25.0, api.purgeServerSideCache is deprecated. Please use api.refreshServerSide({purge: true}) instead.`);
+            this.refreshServerSide({
                 route: route,
                 purge: true
             });
@@ -1908,26 +1937,38 @@ export class GridApi {
     }
 
     /**
-     * Refresh a server-side store.
-     * If you pass no parameters, then the top level cache is purged.
-     * To purge a child cache, pass in the string of keys to get to the child cache.
+     * Refresh a server-side level.
+     * If you pass no parameters, then the top level store is purged.
+     * To purge a child level, pass in the string of keys to get to the desired level.
      */
-    public refreshServerSideStore(params?: RefreshStoreParams): void {
-        if (this.serverSideRowModel) {
-            this.serverSideRowModel.refreshStore(params);
-        } else {
-            console.warn(`AG Grid: api.refreshServerSideStore is only available when rowModelType='serverSide'.`);
+    public refreshServerSide(params?: RefreshServerSideParams): void {
+        if (!this.serverSideRowModel) {
+            console.warn(`AG Grid: api.refreshServerSide is only available when rowModelType='serverSide'.`);
         }
+        this.serverSideRowModel.refreshStore(params);
     }
 
-    /** Returns info on all server side stores. */
-    public getServerSideStoreState(): ServerSideStoreState[] {
-        if (this.serverSideRowModel) {
-            return this.serverSideRowModel.getStoreState();
-        } else {
-            console.warn(`AG Grid: api.getServerSideStoreState is only available when rowModelType='serverSide'.`);
+    /** @deprecated use `refreshServerSide` instead */
+    public refreshServerSideStore(params?: RefreshServerSideParams): void {
+        const message = `AG Grid: Grid API refreshServerSideStore() was renamed to refreshServerSide() in v28.0`;
+        doOnce(() => console.warn(message), 'refreshServerSideStore-renamed');
+        return this.refreshServerSide(params);
+    }
+
+    /** @deprecated use `getServerSideGroupLevelState` instead */
+    public getServerSideStoreState(): ServerSideGroupLevelState[] {
+        const message = `AG Grid: Grid API getServerSideStoreState() was renamed to getServerSideGroupLevelState() in v28.0`;
+        doOnce(() => console.warn(message), 'getServerSideStoreState-renamed');
+        return this.getServerSideGroupLevelState();
+    }
+
+    /** Returns info on all server side group levels. */
+    public getServerSideGroupLevelState(): ServerSideGroupLevelState[] {
+        if (!this.serverSideRowModel) {
+            console.warn(`AG Grid: api.getServerSideGroupLevelState is only available when rowModelType='serverSide'.`);
             return [];
         }
+        return this.serverSideRowModel.getStoreState();
     }
 
     public getVirtualRowCount(): number | null | undefined {
@@ -2009,6 +2050,22 @@ export class GridApi {
         return this.getFirstDisplayedRow();
     }
 
+    /** Get the index of the first visible row in the viewport. */
+    public getFirstVisibleRowIndex(): number {
+        const pageOffset = this.paginationProxy.getPixelOffset();
+        const firstVisiblePx = this.gridBodyCtrl.getScrollFeature().getVScrollPosition().top;
+        const firstRowPx = pageOffset + firstVisiblePx;
+        return this.rowModel.getRowIndexAtPixel(firstRowPx);
+    }
+
+    /** Get the index of the last visible row in the viewport. */
+    public getLastVisibleRowIndex(): number {
+        const pageOffset = this.paginationProxy.getPixelOffset();
+        const lastVisiblePx = this.gridBodyCtrl.getScrollFeature().getVScrollPosition().bottom;
+        const lastRowPx = pageOffset + lastVisiblePx;
+        return this.rowModel.getRowIndexAtPixel(lastRowPx);
+    }
+
     /** Get the index of the first displayed row due to scrolling (includes invisible rendered rows in the buffer). */
     public getFirstDisplayedRow(): number {
         return this.rowRenderer.getFirstVirtualRenderedRow();
@@ -2025,7 +2082,7 @@ export class GridApi {
     }
 
     /** Returns the displayed `RowNode` at the given `index`. */
-    public getDisplayedRowAtIndex(index: number): RowNode | undefined {
+    public getDisplayedRowAtIndex(index: number): RowNode<TData> | undefined {
         return this.rowModel.getRow(index);
     }
 

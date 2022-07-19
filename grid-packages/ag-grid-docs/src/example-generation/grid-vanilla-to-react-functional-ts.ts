@@ -1,18 +1,25 @@
 import { templatePlaceholder } from "./grid-vanilla-src-parser";
-import { addBindingImports, convertFunctionToConstPropertyTs, getFunctionName, getModuleRegistration, getPropertyInterfaces, ImportType, isInstanceMethod } from './parser-utils';
+import { addBindingImports, addGenericInterfaceImport, convertFunctionToConstPropertyTs, getFunctionName, getModuleRegistration, getPropertyInterfaces, handleRowGenericInterface, ImportType, isInstanceMethod } from './parser-utils';
 import { convertFunctionalTemplate, convertFunctionToConstCallbackTs, getImport, getValueType } from './react-utils';
+const path = require('path');
 
-function getModuleImports(bindings: any, componentFilenames: string[], extraCoreTypes: string[]): string[] {
+function getModuleImports(bindings: any, componentFilenames: string[], extraCoreTypes: string[], allStylesheets: string[]): string[] {
     let imports = [
         "import React, { useCallback, useMemo, useRef, useState } from 'react';",
         "import { render } from 'react-dom';",
         "import { AgGridReact } from '@ag-grid-community/react';"
     ];
 
-    imports.push("import '@ag-grid-community/core/dist/styles/ag-grid.css';");
+    imports.push("import '@ag-grid-community/styles/ag-grid.css';");
     // to account for the (rare) example that has more than one class...just default to alpine if it does
-    const theme = bindings.gridSettings.theme || 'ag-theme-alpine';
-    imports.push(`import '@ag-grid-community/core/dist/styles/${theme}.css';`);
+    // we strip off any '-dark' from the theme when loading the CSS as dark versions are now embedded in the
+    // "source" non dark version
+    const theme = bindings.gridSettings.theme ? bindings.gridSettings.theme.replace('-dark', '') : 'ag-theme-alpine';
+    imports.push(`import '@ag-grid-community/styles/${theme}.css';`);
+
+    if(allStylesheets && allStylesheets.length > 0) {
+        allStylesheets.forEach(styleSheet => imports.push(`import './${path.basename(styleSheet)}';`));
+    }
 
     let propertyInterfaces = getPropertyInterfaces(bindings.properties);
     const bImports = [...(bindings.imports || [])];
@@ -30,13 +37,15 @@ function getModuleImports(bindings: any, componentFilenames: string[], extraCore
         imports.push(...componentFilenames.map(getImport));
     }
 
+    addGenericInterfaceImport(imports, bindings.tData, bindings);
+
     imports = [...imports, ...getModuleRegistration(bindings)];
 
     return imports;
 }
 
-function getPackageImports(bindings: any, componentFilenames: string[], extraCoreTypes: string[]): string[] {
-    const { gridSettings } = bindings;
+function getPackageImports(bindings: any, componentFilenames: string[], extraCoreTypes: string[], allStylesheets: string[]): string[] {
+    const { gridSettings, tData } = bindings;
 
     const imports = [
         "import React, { useCallback, useMemo, useRef, useState } from 'react';",
@@ -48,11 +57,17 @@ function getPackageImports(bindings: any, componentFilenames: string[], extraCor
         imports.push("import 'ag-grid-enterprise';");
     }
 
-    imports.push("import 'ag-grid-community/dist/styles/ag-grid.css';");
+    imports.push("import 'ag-grid-community/styles/ag-grid.css';");
 
     // to account for the (rare) example that has more than one class...just default to alpine if it does
-    const theme = gridSettings.theme || 'ag-theme-alpine';
-    imports.push(`import 'ag-grid-community/dist/styles/${theme}.css';`);
+    // we strip off any '-dark' from the theme when loading the CSS as dark versions are now embedded in the
+    // "source" non dark version
+    const theme = gridSettings.theme ? gridSettings.theme.replace('-dark', '') : 'ag-theme-alpine';
+    imports.push(`import 'ag-grid-community/styles/${theme}.css';`);
+
+    if(allStylesheets && allStylesheets.length > 0) {
+        allStylesheets.forEach(styleSheet => imports.push(`import './${path.basename(styleSheet)}';`));
+    }
 
     let propertyInterfaces = getPropertyInterfaces(bindings.properties);
     const bImports = [...(bindings.imports || [])];
@@ -69,22 +84,24 @@ function getPackageImports(bindings: any, componentFilenames: string[], extraCor
         imports.push(...componentFilenames.map(getImport));
     }
 
+    addGenericInterfaceImport(imports, bindings.tData, bindings);
+
     return imports;
 }
 
-function getImports(bindings: any, componentFileNames: string[], importType: ImportType, extraCoreTypes: string[]): string[] {
+function getImports(bindings: any, componentFileNames: string[], importType: ImportType, extraCoreTypes: string[], allStylesheets: string[]): string[] {
     if (importType === 'packages') {
-        return getPackageImports(bindings, componentFileNames, extraCoreTypes);
+        return getPackageImports(bindings, componentFileNames, extraCoreTypes, allStylesheets);
     } else {
-        return getModuleImports(bindings, componentFileNames, extraCoreTypes);
+        return getModuleImports(bindings, componentFileNames, extraCoreTypes, allStylesheets);
     }
 }
 
-function getTemplate(bindings: any, componentAttributes: string[]): string {
+function getTemplate(bindings: any, componentAttributes: string[], rowDataGeneric: string): string {
     const { gridSettings } = bindings;
     const agGridTag = `
         <div ${gridSettings.myGridReference ? 'id="myGrid"' : ''} style={gridStyle} className="${gridSettings.theme}">             
-            <AgGridReact
+            <AgGridReact${rowDataGeneric}
                 ref={gridRef}
                 ${componentAttributes.join('\n')}
             >
@@ -123,6 +140,7 @@ function getEventAndCallbackNames() {
     const docs = require('../../documentation/doc-pages/grid-api/doc-interfaces.AUTO.json');
     const gridOptions = docs['GridOptions'];
     const callbacksAndEvents = Object.entries(gridOptions).filter(([k, v]: [any, any]) => {
+        if (k == 'meta') { return false; }
         const isCallback = v.type.arguments && !v.meta?.isEvent;
         // Some callbacks use call signature interfaces and so do not have arguments like you might expect.
         const isCallSigInterface = interfaces[v.type?.returnType]?.meta?.isCallSignature;
@@ -132,11 +150,10 @@ function getEventAndCallbackNames() {
     return callbacksAndEvents;;
 }
 
-const ROW_DATA_STATE = 'const [rowData, setRowData] = useState<any[]>();'
-const GRID_REF_HOOK = "const gridRef = useRef<AgGridReact>(null);"
 
-export function vanillaToReactFunctionalTs(bindings: any, componentFilenames: string[]): (importType: ImportType) => string {
-    const { properties, data, gridSettings, onGridReady, resizeToFit, typeDeclares, interfaces } = bindings;
+
+export function vanillaToReactFunctionalTs(bindings: any, componentFilenames: string[], allStylesheets: string[]): (importType: ImportType) => string {
+    const { properties, data, tData, gridSettings, onGridReady, resizeToFit, typeDeclares, interfaces } = bindings;
 
     const eventAndCallbackNames = getEventAndCallbackNames();
     const utilMethodNames = bindings.utils.map(getFunctionName);
@@ -146,16 +163,18 @@ export function vanillaToReactFunctionalTs(bindings: any, componentFilenames: st
             .filter(dependency => !global[dependency]) // exclude things like Number, isNaN etc
         return acc;
     }, {})
+    const rowDataType = tData || 'any';
+    const rowDataGeneric = tData ? `<${tData}>` : ''
+    const rowDataState = `const [rowData, setRowData] = useState<${rowDataType}[]>();`
+    const gridRefHook = `const gridRef = useRef<AgGridReact${rowDataGeneric}>(null);`
 
     return importType => {
         // instance values
         const stateProperties = [
             `const containerStyle = useMemo(() => ({ width: '100%', height: '100%' }), []);`,
             `const gridStyle = useMemo(() => ({height: '${gridSettings.height}', width: '${gridSettings.width}'}), []);`,
-            ROW_DATA_STATE
+            rowDataState
         ];
-
-
 
         // for when binding a method
         // see javascript-grid-keyboard-navigation for an example
@@ -172,7 +191,7 @@ export function vanillaToReactFunctionalTs(bindings: any, componentFilenames: st
             additionalInReady.push(`
                 fetch(${data.url})
                 .then(resp => resp.json())
-                .then((data: any[]) => ${setRowDataBlock});`
+                .then((data: ${rowDataType}[]) => ${setRowDataBlock});`
             );
         }
 
@@ -191,7 +210,7 @@ export function vanillaToReactFunctionalTs(bindings: any, componentFilenames: st
             extraCoreTypes = ['GridReadyEvent'];
         }
 
-        const imports = getImports(bindings, componentFilenames, importType, extraCoreTypes);
+        const imports = getImports(bindings, componentFilenames, importType, extraCoreTypes, allStylesheets);
 
         const components: { [componentName: string]: string } = extractComponentInformation(properties, componentFilenames);
 
@@ -205,8 +224,8 @@ export function vanillaToReactFunctionalTs(bindings: any, componentFilenames: st
         properties.filter(property => property.name !== 'onGridReady').forEach(property => {
             if (property.name === 'rowData') {
                 if (property.value !== "null" && property.value !== null) {
-                    const rowDataIndex = stateProperties.indexOf(ROW_DATA_STATE);
-                    stateProperties[rowDataIndex] = `const [rowData, setRowData] = useState<any[]>(${property.value});`
+                    const rowDataIndex = stateProperties.indexOf(rowDataState);
+                    stateProperties[rowDataIndex] = `const [rowData, setRowData] = useState<${rowDataType}[]>(${property.value});`
                 }
             } else if (property.value === 'true' || property.value === 'false') {
                 componentProps.push(`${property.name}={${property.value}}`);
@@ -277,7 +296,7 @@ export function vanillaToReactFunctionalTs(bindings: any, componentFilenames: st
             .replace(/gridRef\.current\.api(!?)\.setRowData/g, "setRowData")
             .replace(/gridApi/g, "gridRef.current!.api")
 
-        const template = getTemplate(bindings, componentProps.map(thisReferenceConverter));
+        const template = getTemplate(bindings, componentProps.map(thisReferenceConverter), rowDataGeneric);
         const eventHandlers = bindings.eventHandlers.map(event => convertFunctionToConstCallbackTs(event.handler, callbackDependencies)).map(thisReferenceConverter).map(gridInstanceConverter);
         const externalEventHandlers = bindings.externalEventHandlers.map(handler => convertFunctionToConstCallbackTs(handler.body, callbackDependencies)).map(thisReferenceConverter).map(gridInstanceConverter);
         const instanceMethods = bindings.instanceMethods.map(instance => convertFunctionToConstCallbackTs(instance, callbackDependencies)).map(thisReferenceConverter).map(gridInstanceConverter);
@@ -300,7 +319,7 @@ ${bindings.utils.map(convertFunctionToConstPropertyTs).join('\n\n')}
 ${bindings.classes.join('\n')}
 
 const GridExample = () => {
-    ${GRID_REF_HOOK}
+    ${gridRefHook}
     ${stateProperties.join('\n    ')}
 
 ${gridReady}
@@ -327,13 +346,16 @@ render(<GridExample></GridExample>, document.querySelector('#root'))
         }
 
         if ((generatedOutput.match(/gridRef\.current/g) || []).length === 0) {
-            generatedOutput = generatedOutput.replace(GRID_REF_HOOK, "")
+            generatedOutput = generatedOutput.replace(gridRefHook, "")
             generatedOutput = generatedOutput.replace("ref={gridRef}", "")
         }
-        if (generatedOutput.includes(ROW_DATA_STATE) && (generatedOutput.match(/setRowData/g) || []).length === 1) {
-            generatedOutput = generatedOutput.replace(ROW_DATA_STATE, "")
+        if (generatedOutput.includes(rowDataState) && (generatedOutput.match(/setRowData/g) || []).length === 1) {
+            generatedOutput = generatedOutput.replace(rowDataState, "")
             generatedOutput = generatedOutput.replace("rowData={rowData}", "")
         }
+
+        // Until we support this cleanly.
+        generatedOutput = handleRowGenericInterface(generatedOutput, tData);
 
         return generatedOutput;
     };

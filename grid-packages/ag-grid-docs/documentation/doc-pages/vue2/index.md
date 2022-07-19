@@ -62,8 +62,8 @@ index.js
 </template>
 
 <script>
-import "ag-grid-community/dist/styles/ag-grid.css";
-import "ag-grid-community/dist/styles/ag-theme-alpine.css";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 import { AgGridVue } from "ag-grid-vue";
 
 export default {
@@ -135,10 +135,10 @@ new Vue({
 | We offer two versions of Vue support - one for Vue 2 and one for Vue 3. The only difference
 | in use is how you import the dependency:
 |
-| | Version | Package Imports         | Module Imports |
-| | ------- | ----------------------- | -------------- |
-| | Vue 2   | @ag-grid-community/vue  | ag-grid-vue    |
-| | Vue 3   | @ag-grid-community/vue3 | ag-grid-vue3   |
+| | Version | Package Imports  | Module Imports          |
+| | ------- | ---------------- | ----------------------- |
+| | Vue 2   | ag-grid-vue      | @ag-grid-community/vue  |
+| | Vue 3   | ag-grid-vue3     | @ag-grid-community/vue3 |
 |
 | If you unsure what import type to use you should use the package import type
 | (i.e. `ag-grid-vue`/ `ag-grid-vue3`).
@@ -147,7 +147,7 @@ new Vue({
 |
 | This tutorial, as well as ll of our examples, use Vue 2 by default.
 |
-| For the Vue 3 version of this tutorial please see the documentation [here.](/vue3/)
+| For the Vue 3 version of this tutorial please see the documentation [here.](/getting-started/)
 |
 
 ## Add AG Grid to Your Project
@@ -159,14 +159,13 @@ Vue project module bundler setup. Let's follow the [Vue CLI instructions](https:
 run the following in your terminal:
 
 ```bash
-npm install -g @vue/cli
-vue create my-project
+npx -p @vue/cli vue create my-project
 ```
 
 When prompted choose "Manually select features":
 
 ```shell
-Vue CLI v4.5.12
+Vue CLI v5.0.4
 ? Please pick a preset:
   Default ([Vue 2] babel, eslint)
   Default (Vue 3) ([Vue 3] babel, eslint)
@@ -177,10 +176,9 @@ Next, select `Babel` and `CSS Pre-processors` (we've also deselected `Linter` he
 this is optional):
 
 ```shell
-Vue CLI v4.5.12
+Vue CLI v5.0.4
 ? Please pick a preset: Manually select features
 ? Check the features needed for your project:
-  ◉ Choose Vue version
   ◉ Babel
   ◯ TypeScript
   ◯ Progressive Web App (PWA) Support
@@ -195,7 +193,7 @@ Vue CLI v4.5.12
 Select version `2.x` when prompted:
 
 ```shell
-Vue CLI v4.5.12
+Vue CLI v5.0.4
 ? Please pick a preset: Manually select features
 ? Check the features needed for your project: Choose Vue version, Babel, CSS Pre-processors
 ? Choose a version of Vue.js that you want to start the project with (Use arrow keys)
@@ -206,13 +204,12 @@ Vue CLI v4.5.12
 Next select `Sass/SCSS (with dart-sass)` as the CSS Pre-processor:
 
 ```shell
-Vue CLI v4.5.12
+Vue CLI v5.0.4
 ? Please pick a preset: Manually select features
 ? Check the features needed for your project: Choose Vue version, Babel, CSS Pre-processors
 ? Choose a version of Vue.js that you want to start the project with 2.x
 ? Pick a CSS pre-processor (PostCSS, Autoprefixer and CSS Modules are supported by default):
 ❯ Sass/SCSS (with dart-sass)
-  Sass/SCSS (with node-sass)
   Less
   Stylus
 ```
@@ -220,7 +217,7 @@ Vue CLI v4.5.12
 Now choose where to store the configuration data - we've opted for `dedicated config files`:
 
 ```shell
-Vue CLI v4.5.12
+Vue CLI v5.0.4
 ? Please pick a preset: Manually select features
 ? Check the features needed for your project: Choose Vue version, Babel, CSS Pre-processors
 ? Choose a version of Vue.js that you want to start the project with 2.x
@@ -233,7 +230,7 @@ Finally you can choose to save this configuration for all future projects - what
 for the purposes of this tutorial we'll select `No`:
 
 ```shell
-Vue CLI v4.5.12
+Vue CLI v5.0.4
 ? Please pick a preset: Manually select features
 ? Check the features needed for your project: Choose Vue version, Babel, CSS Pre-processors
 ? Choose a version of Vue.js that you want to start the project with 2.x
@@ -264,8 +261,8 @@ As a first step, let's add the AG Grid styles - replace the `style` block in `sr
 
 ```scss
 <style lang="scss">
-  @import "~ag-grid-community/dist/styles/ag-grid.css";
-  @import "~ag-grid-community/dist/styles/ag-theme-alpine.css";
+  @import "~ag-grid-community/styles/ag-grid.css";
+  @import "~ag-grid-community/styles/ag-theme-alpine.css";
 </style>
 ```
 
@@ -330,8 +327,8 @@ export default {
 };
 </script>
 <style lang="scss">
-   @import "~ag-grid-community/dist/styles/ag-grid.css";
-   @import "~ag-grid-community/dist/styles/ag-theme-alpine.css";
+   @import "~ag-grid-community/styles/ag-grid.css";
+   @import "~ag-grid-community/styles/ag-theme-alpine.css";
 </style>
 ```
 
@@ -464,8 +461,8 @@ export default {
 };
 </script>
 <style lang="scss">
- @import "~ag-grid-community/dist/styles/ag-grid.css";
- @import "~ag-grid-community/dist/styles/ag-theme-alpine.css";
+ @import "~ag-grid-community/styles/ag-grid.css";
+ @import "~ag-grid-community/styles/ag-theme-alpine.css";
 </style>
 ```
 
@@ -484,9 +481,8 @@ Let's go ahead and make these changes:
 
 ```diff
 <template>
- <div>
-+      <button @click="getSelectedRows()">Get Selected Rows</button>
-
++  <div>
++     <button @click="getSelectedRows()">Get Selected Rows</button>
       <ag-grid-vue
           style="width: 500px; height: 200px"
           class="ag-theme-alpine"
@@ -494,7 +490,7 @@ Let's go ahead and make these changes:
           :rowData="rowData"
       >
       </ag-grid-vue>
- </div>
++  </div>
 </template>
 
 <script>
@@ -539,8 +535,8 @@ export default {
 };
 </script>
 <style lang="scss">
- @import "~ag-grid-community/dist/styles/ag-grid.css";
- @import "~ag-grid-community/dist/styles/ag-theme-alpine.css";
+ @import "~ag-grid-community/styles/ag-grid.css";
+ @import "~ag-grid-community/styles/ag-theme-alpine.css";
 </style>
 ```
 
@@ -656,8 +652,8 @@ the `columnDefs` with a `rowGroup`:
    };
 </script>
 <style lang="scss">
-   @import "~ag-grid-community/dist/styles/ag-grid.css";
-   @import "~ag-grid-community/dist/styles/ag-theme-alpine.css";
+   @import "~ag-grid-community/styles/ag-grid.css";
+   @import "~ag-grid-community/styles/ag-theme-alpine.css";
 </style>
 ```
 
@@ -689,22 +685,18 @@ the provided AG Grid SCSS files - replace the `style` block in `src/App.vue` wit
 
 ```scss
 <style lang="scss">
-  @import "~ag-grid-community/src/styles/ag-grid.scss";
-  @import "~ag-grid-community/src/styles/ag-theme-alpine/sass/ag-theme-alpine-mixin.scss";
-
-  .ag-theme-alpine {
-      @include ag-theme-alpine((
-          odd-row-background-color: #ACE
-      ));
-  }
+  @use "~ag-grid-community/styles" as ag;
+  @include ag.grid-styles((
+    theme: alpine,
+    --ag-odd-row-background-color: #ACE
+  ));
 </style>
 ```
 
 If everything is configured correctly, the second row of the grid will be blue. Congratulations!
 You now know now bend the grid look to your will - there are a few dozens more Sass variables that
 let you control the font family and size, border color, header background color and even the amount
-of spacing in the cells and columns. The full [Sass variable list](/themes-customising/#full-list-of-theme-parameters)
-is available in the themes documentation section.
+of spacing in the cells and columns. 
 
 ## Summary
 

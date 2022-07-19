@@ -16,16 +16,14 @@ import {
     RowNodeBlockLoader,
     RowNodeSorter,
     SelectionChangedEvent,
-    ServerSideStoreParams,
-    ServerSideStoreState,
+    ServerSideGroupLevelParams,
+    ServerSideGroupLevelState,
     ServerSideTransaction,
     ServerSideTransactionResult,
     ServerSideTransactionResultStatus,
     SortController,
     StoreRefreshAfterParams,
     StoreUpdatedEvent,
-    ColumnApi,
-    GridApi,
     WithoutGridCommon,
     IsApplyServerSideTransactionParams
 } from "@ag-grid-community/core";
@@ -46,8 +44,6 @@ export class FullStore extends RowNodeBlock implements IServerSideStore {
     @Autowired('ssrmNodeManager') private nodeManager: NodeManager;
     @Autowired('filterManager') private filterManager: FilterManager;
     @Autowired('ssrmTransactionManager') private transactionManager: TransactionManager;
-    @Autowired('columnApi') private columnApi: ColumnApi;
-    @Autowired('gridApi') private gridApi: GridApi;
 
     private readonly level: number;
     private readonly groupLevel: boolean | undefined;
@@ -78,7 +74,7 @@ export class FullStore extends RowNodeBlock implements IServerSideStore {
 
     private info: any = {};
 
-    constructor(ssrmParams: SSRMParams, storeParams: ServerSideStoreParams, parentRowNode: RowNode) {
+    constructor(ssrmParams: SSRMParams, storeParams: ServerSideGroupLevelParams, parentRowNode: RowNode) {
         // finite block represents a cache with just one block, thus 0 is the id, it's the first block
         super(0);
         this.ssrmParams = ssrmParams;
@@ -99,7 +95,14 @@ export class FullStore extends RowNodeBlock implements IServerSideStore {
             this.rowGroupColumn = this.columnModel.getRowGroupColumns()[this.level];
         }
 
-        this.initialiseRowNodes();
+
+        let initialRowCount = 1;
+        const isRootStore = this.parentRowNode.level === -1;
+        const userInitialRowCount = this.gridOptionsWrapper.getServerSideInitialRowCount();
+        if (isRootStore && userInitialRowCount !== undefined) {
+            initialRowCount = userInitialRowCount;
+        }
+        this.initialiseRowNodes(initialRowCount);
 
         this.rowNodeBlockLoader.addBlock(this);
         this.addDestroyFunc(() => this.rowNodeBlockLoader.removeBlock(this));
@@ -115,7 +118,7 @@ export class FullStore extends RowNodeBlock implements IServerSideStore {
         this.allNodesMap = {};
     }
 
-    private initialiseRowNodes(loadingRowsCount = 1, failedLoad = false): void {
+    private initialiseRowNodes(loadingRowsCount: number, failedLoad = false): void {
         this.destroyRowNodes();
         for (let i = 0; i < loadingRowsCount; i++) {
             const loadingRowNode = this.blockUtils.createRowNode(
@@ -204,8 +207,9 @@ export class FullStore extends RowNodeBlock implements IServerSideStore {
     protected processServerResult(params: LoadSuccessParams): void {
         if (!this.isAlive()) { return; }
 
-        if (params.storeInfo) {
-            Object.assign(this.info, params.storeInfo);
+        const info = params.storeInfo || params.groupLevelInfo;
+        if (info) {
+            Object.assign(this.info, info);
         }
 
         const nodesToRecycle = this.allRowNodes.length > 0 ? this.allNodesMap : undefined;
@@ -286,14 +290,10 @@ export class FullStore extends RowNodeBlock implements IServerSideStore {
     }
 
     private sortRowNodes(): void {
-
+        const serverIsSorting = this.gridOptionsWrapper.isServerSideSortAllLevels() || this.gridOptionsWrapper.isServerSideSortOnServer();
         const sortOptions = this.sortController.getSortOptions();
         const noSortApplied = !sortOptions || sortOptions.length == 0;
-
-        // if we reset after sort, it means the sorting is done on the server
-        const sortDoneOnServer = this.gridOptionsWrapper.isServerSideSortingAlwaysResets();
-
-        if (noSortApplied || sortDoneOnServer) {
+        if (serverIsSorting || noSortApplied) {
             this.nodesAfterSort = this.nodesAfterFilter;
             return;
         }
@@ -302,17 +302,12 @@ export class FullStore extends RowNodeBlock implements IServerSideStore {
     }
 
     private filterRowNodes(): void {
-
-        // if we reset after filter, it means the filtering is done on the server
-        const filterDoneOnServer = this.gridOptionsWrapper.isServerSideFilteringAlwaysResets();
-
+        const serverIsFiltering = this.gridOptionsWrapper.isServerSideFilterAllLevels() || this.gridOptionsWrapper.isServerSideFilterOnServer();
         // filtering for InFullStore only works at lowest level details.
         // reason is the logic for group filtering was to difficult to work out how it should work at time of writing.
         const groupLevel = this.groupLevel;
 
-        const skipFilter = filterDoneOnServer || groupLevel;
-
-        if (skipFilter) {
+        if (serverIsFiltering || groupLevel) {
             this.nodesAfterFilter = this.allRowNodes;
             return;
         }
@@ -469,21 +464,31 @@ export class FullStore extends RowNodeBlock implements IServerSideStore {
     }
 
     public refreshAfterFilter(params: StoreRefreshAfterParams): void {
-        if (params.alwaysReset || this.gridOptionsWrapper.isTreeData()) {
+        const serverIsFiltering = this.gridOptionsWrapper.isServerSideFilterOnServer();
+        const storeIsImpacted = this.storeUtils.isServerRefreshNeeded(this.parentRowNode, this.ssrmParams.rowGroupCols, params);
+        const serverIsFilteringAllLevels = this.gridOptionsWrapper.isServerSideFilterAllLevels();
+        if (serverIsFilteringAllLevels || (serverIsFiltering && storeIsImpacted)) {
             this.refreshStore(true);
+            this.sortRowNodes();
             return;
         }
 
-        this.filterAndSortNodes();
+        this.filterRowNodes();
+        this.sortRowNodes();
         this.forEachChildStoreShallow(store => store.refreshAfterFilter(params));
     }
 
     public refreshAfterSort(params: StoreRefreshAfterParams): void {
-        if (params.alwaysReset) {
+        const serverIsSorting = this.gridOptionsWrapper.isServerSideSortOnServer();
+        const storeIsImpacted = this.storeUtils.isServerRefreshNeeded(this.parentRowNode, this.ssrmParams.rowGroupCols, params);
+        const serverIsSortingAllLevels = this.gridOptionsWrapper.isServerSideSortAllLevels();
+        if (serverIsSortingAllLevels || (serverIsSorting && storeIsImpacted)) {
             this.refreshStore(true);
+            this.filterRowNodes();
             return;
         }
 
+        this.filterRowNodes();
         this.sortRowNodes();
         this.forEachChildStoreShallow(store => store.refreshAfterSort(params));
     }
@@ -505,7 +510,8 @@ export class FullStore extends RowNodeBlock implements IServerSideStore {
             const params: WithoutGridCommon<IsApplyServerSideTransactionParams> = {
                 transaction: transaction,
                 parentNode: this.parentRowNode,
-                storeInfo: this.info
+                storeInfo: this.info,
+                groupLevelInfo: this.info
             };
             const apply = applyCallback(params);
             if (!apply) {
@@ -651,9 +657,9 @@ export class FullStore extends RowNodeBlock implements IServerSideStore {
         return rowNode;
     }
 
-    public addStoreStates(result: ServerSideStoreState[]): void {
+    public addStoreStates(result: ServerSideGroupLevelState[]): void {
         result.push({
-            type: 'full',
+            infiniteScroll: false,
             route: this.parentRowNode.getGroupKeys(),
             rowCount: this.allRowNodes.length,
             info: this.info

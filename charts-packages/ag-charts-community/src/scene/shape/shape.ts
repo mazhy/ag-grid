@@ -146,13 +146,13 @@ export abstract class Shape extends Node {
     })
     opacity: number = Shape.defaultStyles.opacity;
 
-    @SceneChangeDetection({ redraw: RedrawType.MINOR })
+    @SceneChangeDetection({ redraw: RedrawType.MINOR, checkDirtyOnAssignment: true })
     fillShadow: DropShadow | undefined = Shape.defaultStyles.fillShadow;
 
-    @SceneChangeDetection({ redraw: RedrawType.MINOR })
+    @SceneChangeDetection({ redraw: RedrawType.MINOR, checkDirtyOnAssignment: true })
     strokeShadow: DropShadow | undefined = Shape.defaultStyles.strokeShadow;
 
-    protected fillStroke(ctx: CanvasRenderingContext2D) {
+    protected fillStroke(ctx: CanvasFillStrokeStyles & CanvasCompositing & CanvasShadowStyles & CanvasPathDrawingStyles & CanvasDrawPath) {
         if (!this.scene) {
             return;
         }
@@ -213,5 +213,4 @@ export abstract class Shape extends Node {
     }
 
     abstract isPointInPath(x: number, y: number): boolean;
-    abstract isPointInStroke(x: number, y: number): boolean;
 }

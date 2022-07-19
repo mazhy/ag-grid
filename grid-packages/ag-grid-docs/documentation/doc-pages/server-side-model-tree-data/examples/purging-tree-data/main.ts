@@ -16,7 +16,7 @@ const gridOptions: GridOptions = {
     field: 'employeeName',
   },
   rowModelType: 'serverSide',
-  serverSideStoreType: 'partial',
+  serverSideInfiniteScroll: true,
   treeData: true,
   columnDefs: columnDefs,
   animateRows: true,
@@ -39,7 +39,7 @@ const gridOptions: GridOptions = {
 }
 
 function refreshCache(route: string[]) {
-  gridOptions.api!.refreshServerSideStore({ route: route, purge: true })
+  gridOptions.api!.refreshServerSide({ route: route, purge: true })
 }
 
 // setup the grid after the page has finished loading

@@ -1,6 +1,7 @@
 import {
     _,
     AgAngleSelect,
+    AgCheckbox,
     AgColorPicker,
     AgGroupComponent,
     AgGroupComponentParams,
@@ -39,6 +40,9 @@ export class AxisPanel extends Component {
     private activePanels: Component[] = [];
     private axisLabelUpdateFuncs: Function[] = [];
 
+    private prevXRotation = 0;
+    private prevYRotation = 0;
+
     constructor(
         private readonly chartController: ChartController,
         private readonly chartOptionsService: ChartOptionsService) {
@@ -62,15 +66,13 @@ export class AxisPanel extends Component {
     }
 
     private initAxis() {
-        const { chartTranslationService } = this;
-
         this.axisGroup
-            .setTitle(chartTranslationService.translate("axis"))
+            .setTitle(this.translate("axis"))
             .toggleGroupExpand(false)
             .hideEnabledCheckbox(true);
 
         this.axisColorInput
-            .setLabel(chartTranslationService.translate("color"))
+            .setLabel(this.translate("color"))
             .setLabelWidth("flex")
             .setInputWidth(45)
             .setValue(this.chartOptionsService.getAxisProperty("line.color"))
@@ -79,22 +81,22 @@ export class AxisPanel extends Component {
         const currentValue = this.chartOptionsService.getAxisProperty<number>("line.width");
         this.axisLineWidthSlider
             .setMaxValue(getMaxValue(currentValue, 10))
-            .setLabel(chartTranslationService.translate("thickness"))
+            .setLabel(this.translate("thickness"))
             .setTextFieldWidth(45)
             .setValue(`${currentValue}`)
             .onValueChange(newValue => this.chartOptionsService.setAxisProperty("line.width", newValue));
 
         if (_.includes(['line', 'scatter', 'bubble'], this.chartController.getChartType()) && !this.chartController.isGrouping()) {
             const options: { value: any | '', text: string }[] = [
-                { value: '', text: chartTranslationService.translate('automatic') }
+                { value: '', text: this.translate('automatic') }
             ];
 
             ['category', 'time', 'number'].forEach((type: any) => {
-                options.push({ value: type, text: chartTranslationService.translate(type) });
+                options.push({ value: type, text: this.translate(type) });
             });
 
             this.xAxisTypeSelect
-                .setLabel(chartTranslationService.translate('xType'))
+                .setLabel(this.translate('xType'))
                 .setLabelWidth('flex')
                 .addOptions(options)
                 .setValue(this.chartOptionsService.getChartOption('xAxis.type') || '')
@@ -128,12 +130,10 @@ export class AxisPanel extends Component {
             if (font.style) { this.chartOptionsService.setAxisProperty("label.fontStyle", font.style); }
             if (font.size) { this.chartOptionsService.setAxisProperty("label.fontSize", font.size); }
             if (font.color) { this.chartOptionsService.setAxisProperty("label.color", font.color); }
-
-            // @todo(AG-6790): Revisit approach here?
-            // this.chartController.getChartProxy().getChart().layoutPending = true;
         };
 
         const params: FontPanelParams = {
+            name: this.translate("labels"),
             enabled: true,
             suppressEnabledCheckbox: true,
             initialFont,
@@ -148,7 +148,74 @@ export class AxisPanel extends Component {
     }
 
     private addAdditionalLabelComps(labelPanelComp: FontPanel) {
-        const createAngleComp = (label: string, axisType: 'xAxis' | 'yAxis') => {
+        this.addLabelPadding(labelPanelComp);
+
+        const { xRotationComp, yRotationComp } = this.createRotationWidgets();
+        const autoRotateCb = this.initLabelRotations(xRotationComp, yRotationComp);
+
+        labelPanelComp.addCompToPanel(autoRotateCb);
+        labelPanelComp.addCompToPanel(xRotationComp);
+        labelPanelComp.addCompToPanel(yRotationComp);
+    }
+
+    private initLabelRotations(xRotationComp: AgAngleSelect, yRotationComp: AgAngleSelect) {
+        const getLabelRotation = (axisType: 'xAxis' | 'yAxis'): number => {
+            return this.chartOptionsService.getLabelRotation(axisType);
+        }
+
+        const setLabelRotation = (axisType: 'xAxis' | 'yAxis', value: number | undefined) => {
+            this.chartOptionsService.setLabelRotation(axisType, value);
+        }
+
+        const updateAutoRotate = (autoRotate: boolean) => {
+            this.chartOptionsService.setAxisProperty("label.autoRotate", autoRotate);
+
+            if (autoRotate) {
+                // store prev rotations before we remove them from the options
+                this.prevXRotation = getLabelRotation("xAxis");
+                this.prevYRotation = getLabelRotation("yAxis");
+
+                // `autoRotate` is only
+                setLabelRotation("xAxis", undefined);
+                setLabelRotation("yAxis", undefined);
+            } else {
+                // reinstate prev rotations
+                setLabelRotation("xAxis", this.prevXRotation);
+                setLabelRotation("yAxis", this.prevYRotation);
+            }
+
+            xRotationComp.setDisabled(autoRotate);
+            yRotationComp.setDisabled(autoRotate);
+        }
+
+        const getAutoRotateValue = () => {
+            const xRotation = getLabelRotation("xAxis");
+            const yRotation = getLabelRotation("yAxis");
+            if (xRotation == undefined && yRotation == undefined) {
+                return this.chartOptionsService.getAxisProperty<boolean>("label.autoRotate");
+            }
+            return false;
+        }
+
+        const autoRotate = getAutoRotateValue();
+        const autoRotateCheckbox = this.createBean(new AgCheckbox())
+            .setLabel(this.translate('autoRotate'))
+            .setValue(autoRotate)
+            .onValueChange(updateAutoRotate);
+
+
+        // init rotation comp state
+        xRotationComp.setDisabled(autoRotate);
+        yRotationComp.setDisabled(autoRotate);
+
+        return autoRotateCheckbox;
+    }
+
+    private createRotationWidgets() {
+        const degreesSymbol = String.fromCharCode(176);
+
+        const createRotationComp = (labelKey: string, axisType: 'xAxis' | 'yAxis') => {
+            const label = `${this.chartTranslationService.translate(labelKey)} ${degreesSymbol}`;
             const value = this.chartOptionsService.getLabelRotation(axisType) as number;
             const angleSelect = new AgAngleSelect()
                 .setLabel(label)
@@ -159,20 +226,19 @@ export class AxisPanel extends Component {
             // the axis label rotation needs to be updated when the default category changes in the data panel
             this.axisLabelUpdateFuncs.push(() => {
                 const value = this.chartOptionsService.getLabelRotation(axisType) as number;
-                angleSelect.setValue(value);
+                angleSelect.setValue(value || 0);
             });
 
-            const rotationInput = this.createBean(angleSelect);
-            labelPanelComp.addCompToPanel(rotationInput);
+            return this.createBean(angleSelect);
+        }
+
+        return {
+            xRotationComp: createRotationComp("xRotation", "xAxis"),
+            yRotationComp: createRotationComp("yRotation", "yAxis")
         };
+    }
 
-        const degreesSymbol = String.fromCharCode(176);
-        const xRotationLabel = `${this.chartTranslationService.translate("xRotation")} ${degreesSymbol}`;
-        const yRotationLabel = `${this.chartTranslationService.translate("yRotation")} ${degreesSymbol}`;
-
-        createAngleComp(xRotationLabel, "xAxis");
-        createAngleComp(yRotationLabel, "yAxis");
-
+    private addLabelPadding(labelPanelComp: FontPanel) {
         const labelPaddingSlider = this.createBean(new AgSlider());
 
         const currentValue = this.chartOptionsService.getAxisProperty<number>("label.padding");
@@ -183,6 +249,10 @@ export class AxisPanel extends Component {
             .onValueChange(newValue => this.chartOptionsService.setAxisProperty("label.padding", newValue));
 
         labelPanelComp.addCompToPanel(labelPaddingSlider);
+    }
+
+    private translate(key: string, defaultText?: string) {
+        return this.chartTranslationService.translate(key, defaultText);
     }
 
     private destroyActivePanels(): void {
